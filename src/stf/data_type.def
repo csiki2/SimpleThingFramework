@@ -1,0 +1,11 @@
+
+E(Generator, ectNone, etSupportNone)
+E(None, ectNone, etSupportCache)
+E(Topic, ectTopic, etSupportCache)
+E(Device, ectObject, etSupportNone)
+E(String, ectString, etSupportNone)
+E(Raw, ectString, etSupportNone)
+E(Hex32, ectString, etSupportNone)
+E(32, ectNumber, etSupportDoubleField)
+E(64, ectNumber, etSupportNone)
+E(Float, ectNumber, etSupportDoubleField)
