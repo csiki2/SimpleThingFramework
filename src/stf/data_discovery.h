@@ -56,11 +56,12 @@ void generateDiscoveryBlock(DataFeeder& feeder_, const DataBlock& generatorBlock
 extern const DiscoveryBlock _Temperature_C;
 extern const DiscoveryBlock _Humidity;
 extern const DiscoveryBlock _Battery;
+extern const DiscoveryBlock _Volt;
 extern const DiscoveryBlock _Uptime_S;
 extern const DiscoveryBlock _Uptime_D;
 extern const DiscoveryBlock _Free_Memory;
 
-extern const DiscoveryBlock* _listBattHumTempC[];
+extern const DiscoveryBlock* _listVoltBattHumTempC[];
 
 } // namespace Discovery
 } // namespace stf

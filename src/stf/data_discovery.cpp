@@ -89,11 +89,12 @@ void generateDiscoveryBlocks(DataFeeder& feeder_, const DataBlock& generatorBloc
 const DiscoveryBlock _Temperature_C = {edf_tempc, edcSensor, "Temperature", "°C", "_"};
 const DiscoveryBlock _Humidity = {edf_hum, edcSensor, "Humidity", "%", "_"};
 const DiscoveryBlock _Battery = {edf_batt, edcSensor, "Battery", "%", "_"};
+const DiscoveryBlock _Volt = {edf_volt, edcSensor, nullptr, "V", nullptr};
 const DiscoveryBlock _Uptime_S = {edf_uptime_s, edcSensor, "Uptime", "s", nullptr};
 const DiscoveryBlock _Uptime_D = {edf_uptime_d, edcSensor, "Uptime", "d", nullptr};
 const DiscoveryBlock _Free_Memory = {edf_free_memory, edcSensor, nullptr, "B", nullptr};
 
-const DiscoveryBlock* _listBattHumTempC[] = {&Discovery::_Battery, &Discovery::_Humidity, &Discovery::_Temperature_C, nullptr};
+const DiscoveryBlock* _listVoltBattHumTempC[] = {&Discovery::_Volt, &Discovery::_Battery, &Discovery::_Humidity, &Discovery::_Temperature_C, nullptr};
 
 const char* topicConfigComponent[] = {
     "sensor", // edcSensor

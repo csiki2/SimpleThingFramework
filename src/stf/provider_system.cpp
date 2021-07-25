@@ -46,7 +46,7 @@ uint SystemProvider::systemUpdate(DataBuffer* systemBuffer_, uint32_t uptimeS_) 
 }
 
 uint SystemProvider::loop() {
-  const uint waitTime = 50, updateTimeS = 60;
+  const uint waitTime = 50, updateTimeS = 120;
 
   Consumer* cons = buffer->getConsumer();
   if (cons == nullptr || !cons->isReady()) return waitTime;
