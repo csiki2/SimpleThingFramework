@@ -61,7 +61,7 @@ void generateDiscoveryBlock(DataFeeder& feeder_, const DataBlock& generatorBlock
     feeder_.nextToWrite(edf_name, edt_String, etisSource0CacheField + etisCaseSmart);
   feeder_.nextToWrite(edf_unit_of_measurement, edt_String, etisSource0Ptr).setPtr(discovery_._measure);
   feeder_.nextToWrite(edf_state_topic, edt_String, etisSource0DeviceId + etisSource1TopicFilter)._value.t32[1] = generatorBlock_._typeInfo & etigTopicMask; // for now...
-  feeder_.nextToWrite(edf_unique_id, edt_String, etisSource0DeviceId + etisSource1CacheField);
+  feeder_.nextToWrite(edf_unique_id, edt_String, etisSource0MACId + etisSource1CacheField);
   if (discovery_._device_class != nullptr) {
     bool useName = strcmp(discovery_._device_class, "_") == 0;
     feeder_.nextToWrite(edf_device_class, edt_String, etisSource0Ptr + (useName ? etisCaseLower : 0)).setPtr((void*)useName ? discovery_._name : discovery_._device_class);

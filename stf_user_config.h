@@ -21,6 +21,11 @@
 #define STFLED_PWMS 0
 
 // BLE Test mode -> the last octet of the MAC must be this value (before xor)
-#define STFBLE_TEST_MAC 0x0c
+//#define STFBLE_TEST_MAC 0x0c
 // BLE Test mode -> xor the last octet of the MAC so won't mess with the whole system
-#define STFBLE_TEST_XOR 0xff
+//#define STFBLE_TEST_XOR 0xff
+
+// OTA
+
+#define STFTASK_OTA 1
+

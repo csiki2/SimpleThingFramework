@@ -45,7 +45,7 @@ int fnDTTopic(char* buffer_, uint len_, const DataBlock& block_, DataCache& cach
   if ((block_._typeInfo & etitConfig) == 0) {
     len = snprintf(buffer_, len_, "home/%s/%s/%s", hostName, topicNormalFmt[topicIndex], cache_._device.info.strId);
   } else {
-    len = snprintf(buffer_, len_, "homeassistant/%s/%s_%s/config", Discovery::topicConfigComponent[topicIndex], cache_._device.info.strId, DataField::list[cache_._block_device._field]);
+    len = snprintf(buffer_, len_, "homeassistant/%s/%s_%s/config", Discovery::topicConfigComponent[topicIndex], cache_._device.info.strMAC, DataField::list[cache_._block_device._field]);
   }
   return len;
 }
