@@ -77,6 +77,7 @@ bool IotWebConfWrapper::init() {
     if (!webConf.loadConfig() && wifiSSID[0] == 0) return false;
     iotwebconf::WifiAuthInfo wifiAuthInfo = webConf.getWifiAuthInfo();
     hostName = webConf.getThingName();
+    hostPassword = webConf.getApPasswordParameter()->valueBuffer;
     wifiSSID = wifiAuthInfo.ssid;
     wifiPassword = wifiAuthInfo.password;
     mode = "load config";

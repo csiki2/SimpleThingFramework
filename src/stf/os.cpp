@@ -28,6 +28,7 @@ namespace stf {
 DeviceBlock hostBlock;
 const DeviceInfo* hostInfo = &hostBlock.info;
 const char* hostName = STF_THING_NAME;
+const char* hostPassword = STF_THING_PASSWORD;
 
 uint32_t savedStartingFreeHeap = 0;
 

@@ -44,6 +44,7 @@ void logMemoryUsage(int level);
 void os_setup();
 
 extern const char* hostName;
+extern const char* hostPassword;
 extern const struct DeviceInfo* hostInfo;
 
 } // namespace stf
