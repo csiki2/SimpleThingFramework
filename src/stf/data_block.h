@@ -103,4 +103,6 @@ struct __attribute__((packed)) DataBlock {
   } _value;
 };
 
+static_assert(sizeof(DataBlock) == 12, "DataBlock size should be 12");
+
 } // namespace stf
