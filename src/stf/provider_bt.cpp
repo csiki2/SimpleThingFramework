@@ -53,7 +53,7 @@ BTProvider::BTProvider() : Provider(&btBuffer) {
 }
 
 void generateBTBlocks(DataFeeder& feeder_, const DataBlock& generatorBlock_, DataCache& cache_) {
-  feeder_.nextToWrite(edf_id, edt_Raw, etirCaseUpper + etirColon + 6).setRaw(cache_._device.info.mac, cache_._device.info.macLen);
+  feeder_.nextToWrite(edf_id, edt_Raw, etirFormatHexUpper + etirSeparatorColon + 6).setRaw(cache_._device.info.mac, cache_._device.info.macLen);
 
   int8_t txpw = (int8_t)generatorBlock_._extra;
   int8_t rssi = (int8_t)generatorBlock_._typeInfo;
@@ -133,7 +133,7 @@ class BTProviderDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
             EnumDataField fld = edf_servicedata;
             for (uint cpy; serviceDataLength > 0 || fld == edf_servicedata; serviceDataBuffer += cpy, serviceDataLength -= cpy, fld = edf__cont) {
               cpy = serviceDataLength > sizeof(DataBlock::_value) + sizeof(DataBlock::_extra) ? sizeof(DataBlock::_value) + sizeof(DataBlock::_extra) : serviceDataLength;
-              btBuffer.nextToWrite(fld, edt_Raw, cpy).setRaw(serviceDataBuffer, cpy);
+              btBuffer.nextToWrite(fld, edt_Raw, cpy + etirFormatHexLower).setRaw(serviceDataBuffer, cpy);
             }
             //freeBlocks = btBuffer.getFreeBlocks();
           }

@@ -96,6 +96,7 @@ bool checkConnection() {
     if (wifiConnectionTry > 0) {
       wifiConnectionTry = 0;
       wifiConnectionTime = uptime;
+      memcpy(hostIP4, &WiFi.localIP()[0], 4);
       logConnected("wifi");
     }
     return true;

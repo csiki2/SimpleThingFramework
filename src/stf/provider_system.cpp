@@ -41,6 +41,7 @@ uint SystemProvider::systemUpdate(DataBuffer* systemBuffer_, uint32_t uptimeS_) 
   systemBuffer_->nextToWrite(edf__topic, edt_Topic, etitSYStoMQTT + etigCacheDeviceHost).setPtr(hostInfo);
   systemBuffer_->nextToWrite(edf_uptime_s, edt_32, 0).set64(uptimeS_);
   systemBuffer_->nextToWrite(edf_uptime_d, edt_32, 0).set32(uptimeS_ / (24 * 60 * 60));
+  systemBuffer_->nextToWrite(edf_ip, edt_Raw, 4 + etirSeparatorDot + etirFormatNumber).setRaw(hostIP4, 4);
   systemBuffer_->nextToWrite(edf_free_memory, edt_32, 0).set32(ESP.getFreeHeap()).closeMessage();
   return 0;
 }

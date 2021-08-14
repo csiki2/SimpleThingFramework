@@ -175,14 +175,16 @@ int fnDTString(char* buffer_, uint len_, const DataBlock& block_, DataCache& cac
 
 int fnDTRaw(char* buffer_, uint len_, const DataBlock& block_, DataCache& cache_) {
   uint8_t size = block_._typeInfo & etirSizeMask;
-  char fmt[] = "%02x:";
-  if ((block_._typeInfo & etirCaseUpper) != 0) fmt[3] = 'X';
-  bool colon = (block_._typeInfo & etirColon) != 0;
-  if (!colon) fmt[4] = '\0';
+  char fmt[6];
+  int fmtType = block_._typeInfo & etirFormatMask;
+  strcpy(fmt, fmtType == etirFormatHexUpper ? "%02X" : (fmtType == etirFormatHexLower ? "%02x" : "%u"));
+  int fmtSeparator = block_._typeInfo & etirSeparatorMask;
+  strcpy(fmt + strlen(fmt), fmtSeparator == etirSeparatorColon ? ":" : (fmtSeparator == etirSeparatorDot ? "." : ""));
+
   int len = 0;
   const uint8_t* buff = &block_._extra;
   for (int idx = 0; idx < size; idx++) {
-    if (colon && idx + 1 == size) fmt[4] = '\0';
+    if (fmtSeparator != etirSeparatorNone && idx + 1 == size) fmt[strlen(fmt) - 1] = '\0';
     int res = snprintf(buffer_ + len, len_ - len, fmt, buff[idx]);
     if (res < 0) return res;
     len += res;

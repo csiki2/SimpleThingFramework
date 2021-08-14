@@ -45,6 +45,7 @@ void os_setup();
 
 extern const char* hostName;
 extern const char* hostPassword;
+extern uint8_t hostIP4[4];
 extern const struct DeviceInfo* hostInfo;
 
 } // namespace stf

@@ -29,6 +29,7 @@ DeviceBlock hostBlock;
 const DeviceInfo* hostInfo = &hostBlock.info;
 const char* hostName = STF_THING_NAME;
 const char* hostPassword = STF_THING_PASSWORD;
+uint8_t hostIP4[4] = { 0, 0, 0, 0 };
 
 uint32_t savedStartingFreeHeap = 0;
 

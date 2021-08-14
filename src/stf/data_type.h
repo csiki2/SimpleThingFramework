@@ -108,9 +108,14 @@ enum EnumTypeInfoString {
 
 enum EnumTypeInfoRaw {
   etirSizeMask = 15,
-  etirCaseUpper = 1 << 4,
-  etirColon = 1 << 5
-
+  etirFormatNumber = 0 << 4,
+  etirFormatHexUpper = 1 << 4,
+  etirFormatHexLower = 2 << 4,
+  etirFormatMask = 3 << 4,
+  etirSeparatorNone = 0 << 6,
+  etirSeparatorColon = 1 << 6,
+  etirSeparatorDot = 2 << 6,
+  etirSeparatorMask = 3 << 6,
 };
 
 enum EnumTypeInfoHex {
