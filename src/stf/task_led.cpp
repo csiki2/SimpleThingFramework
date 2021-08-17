@@ -96,6 +96,8 @@ void registerDefaultLedEvents() {
 
   ledRegisterEvent(STFLEDEVENT_MQTT_CONNECTED, 0, -1, 128, &ledSample010, 25, 1, 2000, 1100); // Disabled
   ledRegisterEvent(STFLEDEVENT_MQTT_NOT_CONNECTED, 0, 3, 128, &ledSample010, 25, 1, 2000, 1100);
+
+  ledRegisterEvent(STFLEDEVENT_BLE_RECEIVE, 0, 1, 128, nullptr, 50, 1, 2000, -1);
 }
 
 void __attribute__((weak)) registerLedEvents() {

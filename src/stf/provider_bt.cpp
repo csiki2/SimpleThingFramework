@@ -75,6 +75,8 @@ class BTProviderDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
   }
 
   void onResult(NimBLEAdvertisedDevice* ble_device_) {
+    STFLED_COMMAND(STFLEDEVENT_BLE_RECEIVE);
+
     BTProvider::_discoveryList.updateDevices();
     BTProviderObj._packetsScanned++;
 
