@@ -25,9 +25,7 @@ namespace stf {
 
 DEFINE_PROVIDERTASK(SystemProvider, 3, 0, 0);
 
-StaticDataBuffer<STF_SYSTEM_QUEUE_SIZE> systemBuffer;
-
-SystemProvider::SystemProvider() : Provider(&systemBuffer), lastSystemReport(0ull) {
+SystemProvider::SystemProvider() : Provider(&bufferSystemProvider), lastSystemReport(0ull) {
 }
 
 const DiscoveryBlock* SystemProvider::_listSystem[] = {&Discovery::_Uptime_S, &Discovery::_Uptime_D, &Discovery::_Free_Memory, nullptr};
@@ -49,7 +47,7 @@ uint SystemProvider::systemUpdate(DataBuffer* systemBuffer_, uint32_t uptimeS_) 
 uint SystemProvider::loop() {
   const uint waitTime = 50, updateTimeS = 120;
 
-  Consumer* cons = buffer->getConsumer();
+  Consumer* cons = bufferSystemProvider.getConsumer();
   if (cons == nullptr || !cons->isReady()) return waitTime;
   uint32_t uptime = uptimeMS64() / 1000;
   if (lastSystemReport >= cons->readyTime() && lastSystemReport + updateTimeS > uptime) return waitTime; // no report is needed yet
@@ -63,19 +61,19 @@ uint SystemProvider::loop() {
     sum += systemDiscovery(nullptr);
     for (Provider* p = systemHead; p != nullptr; p = p->systemNext)
       sum += p->systemDiscovery(nullptr);
-    if (buffer->getFreeBlocks() < sum) return waitTime;
-    systemDiscovery(buffer);
+    if (bufferSystemProvider.getFreeBlocks() < sum) return waitTime;
+    systemDiscovery(&bufferSystemProvider);
     for (Provider* p = systemHead; p != nullptr; p = p->systemNext)
-      p->systemDiscovery(buffer);
+      p->systemDiscovery(&bufferSystemProvider);
   } else {
-    if (buffer->getFreeBlocks() < sum) return waitTime;
+    if (bufferSystemProvider.getFreeBlocks() < sum) return waitTime;
   }
 
   lastSystemReport = uptime;
 
   for (Provider* p = systemHead; p != nullptr; p = p->systemNext)
-    p->systemUpdate(buffer, uptime);
-  systemUpdate(buffer, uptime); // topic + close message...
+    p->systemUpdate(&bufferSystemProvider, uptime);
+  systemUpdate(&bufferSystemProvider, uptime); // topic + close message...
 
   return waitTime;
 }

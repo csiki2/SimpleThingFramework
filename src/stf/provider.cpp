@@ -24,8 +24,6 @@
 
 namespace stf {
 
-StaticDataBuffer<STFQUEUE_SIZE> dataBuffer;
-
 Provider* Provider::systemHead = nullptr;
 
 Provider::Provider(DataBuffer* buffer_) : buffer(buffer_) {
@@ -101,6 +99,12 @@ bool Consumer::onCloseMessageEvent(JsonBuffer& jsonBuffer_, DataCache& cache_) {
   jsonBuffer_.start();
   cache_.reset();
   return res;
+}
+
+void Consumer::consumeBuffers(JsonBuffer& jsonBuffer_) {
+  for (DataBuffer* buffer = bufferHead; buffer != nullptr; buffer = getNextBuffer(buffer)) {
+    consumeBuffer(jsonBuffer_, buffer);
+  }
 }
 
 int Consumer::consumeBuffer(JsonBuffer& jsonBuffer_, DataBuffer* buffer) {

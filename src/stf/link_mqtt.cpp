@@ -21,29 +21,38 @@
 #if STFMQTT == 1
 
 #  include <stf/data_block.h>
-#  include <stf/provider_system.h>
-#  include <stf/provider_bt.h>
+#  include <stf/provider.h>
 
 #  include <WiFi.h>
 #  include <stdlib.h>
 
 namespace stf {
 
-void PubSubClientWrapper::setup() {
-  STFLOG_INFO("Size of DataBlock: %u\n", sizeof(DataBlock));
+WiFiClient eClient;
+MQTTConsumer MQTTConsumer::MQTTConsumerObj;
 
+MQTTConsumer::MQTTConsumer() : client(eClient) {
+  connectionTime = 0;
+  connectionTry = 0;
+}
+
+void MQTTConsumer::setup() {
   int port = strtol(mqttPort, nullptr, 10);
   STFLOG_INFO("MQTT Server - %s:%d\n", mqttServer, port);
   client.setServer(mqttServer, (uint16_t)port);
   client.setBufferSize(STFMQTT_JSONBUFFER_SIZE);
-  consumer.addBuffer(&systemBuffer); // this is a wrong solution, will need refactor...
-  consumer.addBuffer(&btBuffer); // this is a wrong solution, will need refactor...
+
+#  undef STF_BUFFER_DECLARE
+#  define STF_BUFFER_DECLARE(name, size) MQTTConsumerObj.addBuffer(&name);
+#  undef STF_BUFFER_PROVIDER
+#  define STF_BUFFER_PROVIDER(name, provider)
+  STFBUFFERS;
 }
 
-uint32_t PubSubClientWrapper::loop() {
+uint32_t MQTTConsumer::loop() {
   if (client.connected()) {
     STFLED_COMMAND(STFLEDEVENT_MQTT_CONNECTED);
-    consumer.loop();
+    consumeBuffers(jsonBuffer);
     client.loop();
     return 10;
   }
@@ -67,27 +76,12 @@ uint32_t PubSubClientWrapper::loop() {
   return 0;
 }
 
-WiFiClient eClient;
-
-PubSubClient PubSubClientWrapper::client(eClient);
-uint32_t PubSubClientWrapper::connectionTime = 0;
-uint PubSubClientWrapper::connectionTry = 0;
-MQTTConsumer PubSubClientWrapper::consumer;
-
-StaticJsonBuffer<STFMQTT_JSONBUFFER_SIZE> MQTTConsumer::jsonBuffer;
-
-void MQTTConsumer::loop() {
-  for (DataBuffer* buffer = bufferHead; buffer != nullptr; buffer = getNextBuffer(buffer)) {
-    consumeBuffer(jsonBuffer, buffer);
-  }
-}
-
-bool MQTTConsumer::isReady() { return PubSubClientWrapper::client.connected(); }
-uint32_t MQTTConsumer::readyTime() { return PubSubClientWrapper::connectionTime; }
+bool MQTTConsumer::isReady() { return client.connected(); }
+uint32_t MQTTConsumer::readyTime() { return connectionTime; }
 
 bool MQTTConsumer::send(JsonBuffer& jsonBuffer_) {
   //return false;
-  return PubSubClientWrapper::client.publish(jsonBuffer_.buffer + jsonBuffer_.jsonSize, jsonBuffer_.buffer, jsonBuffer_.pos);
+  return client.publish(jsonBuffer_.buffer + jsonBuffer_.jsonSize, jsonBuffer_.buffer, jsonBuffer_.pos);
 }
 
 } // namespace stf

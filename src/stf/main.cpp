@@ -16,16 +16,7 @@
   limitations under the License.
 */
 
-#include <stf/provider_system.h>
-#include <stf/provider_bt.h>
 #include <stf/task.h>
-#include <stf/data_block.h>
-
-namespace stf {
-
-//BTProvider btProvider;
-
-} // namespace stf
 
 void setup() {
   stf::os_setup();

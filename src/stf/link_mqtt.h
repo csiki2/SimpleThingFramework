@@ -31,29 +31,22 @@ namespace stf {
 
 class MQTTConsumer : public Consumer {
 public:
-  void loop() override;
+  static MQTTConsumer MQTTConsumerObj;
+
+  void setup();
+  uint32_t loop();
+
   bool isReady() override;
   uint32_t readyTime() override;
 
 protected:
+  MQTTConsumer();
   bool send(JsonBuffer& jsonBuffer_) override;
 
-  static StaticJsonBuffer<STFMQTT_JSONBUFFER_SIZE> jsonBuffer;
-};
-
-class PubSubClientWrapper {
-public:
-  static void setup();
-  static uint32_t loop();
-
-  static MQTTConsumer consumer;
-
-protected:
-  static PubSubClient client;
-  static uint32_t connectionTime;
-  static uint connectionTry;
-
-  friend class MQTTConsumer;
+  StaticJsonBuffer<STFMQTT_JSONBUFFER_SIZE> jsonBuffer;
+  uint32_t connectionTime;
+  uint connectionTry;
+  PubSubClient client;
 };
 
 } // namespace stf

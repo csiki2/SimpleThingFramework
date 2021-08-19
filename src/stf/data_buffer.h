@@ -88,4 +88,16 @@ protected:
   DataBlock localBuffer[size_];
 };
 
+#define STF_BUFFER0(name, size) STF_BUFFER_DECLARE(name, size)
+#define STF_BUFFER1(name, size, provider) \
+  STF_BUFFER_DECLARE(name, size)          \
+  STF_BUFFER_PROVIDER(name, provider)
+#define STF_BUFFER2(name, size, provider1, provider2) \
+  STF_BUFFER_DECLARE(name, size)                      \
+  STF_BUFFER_PROVIDER(name, provider1)                \
+  STF_BUFFER_PROVIDER(name, provider2)
+#define STF_BUFFER_DECLARE(name, size)      extern StaticDataBuffer<size> name;
+#define STF_BUFFER_PROVIDER(name, provider) extern DataBuffer& buffer##provider;
+STFBUFFERS;
+
 } // namespace stf

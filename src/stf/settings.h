@@ -128,22 +128,26 @@
 #  include <stf/task_wifi.h>
 #endif
 
-// QUEUE
-#ifndef STFQUEUE_SIZE
-#  define STFQUEUE_SIZE 256
-#endif
-
-// SYSTEM QUEUE
-#ifndef STF_SYSTEM_QUEUE_SIZE
-#  define STF_SYSTEM_QUEUE_SIZE 32
-#endif
-
-// BT QUEUE
-#ifndef STF_BT_QUEUE_SIZE
-#  define STF_BT_QUEUE_SIZE 64
-#endif
-
 #if STFMQTT == 1
 #  undef STFJSON
 #  define STFJSON 1
 #endif
+
+// Buffers ( + Providers)
+
+#ifndef STFBUFFER_0
+#  define STFBUFFER_0
+#endif
+#ifndef STFBUFFER_1
+#  define STFBUFFER_1
+#endif
+#ifndef STFBUFFER_2
+#  define STFBUFFER_2
+#endif
+#ifndef STFBUFFER_3
+#  define STFBUFFER_3
+#endif
+#ifndef STFBUFFER_4
+#  define STFBUFFER_4
+#endif
+#define STFBUFFERS STFBUFFER_0 STFBUFFER_1 STFBUFFER_2 STFBUFFER_3 STFBUFFER_4

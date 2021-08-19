@@ -25,8 +25,6 @@ namespace stf {
 
 class JsonBuffer;
 
-extern StaticDataBuffer<STFQUEUE_SIZE> dataBuffer;
-
 // The provider feeds data into the buffer
 // Since the buffer is a lockless queue all provider for the same buffer must run on the same task
 class Provider {
@@ -55,14 +53,14 @@ protected:
   void setupProviderTask(void*);                                                                                                  \
   uint loopProviderTask(void*);                                                                                                   \
   const TaskDescriptor descriptor##name##Task = {setupProviderTask, loopProviderTask, &name##Obj, #name, stackSize, core, order}; \
-  TaskRegister register##name##Task(&descriptor##name##Task);
+  TaskRegister register##name##Task(&descriptor##name##Task);                                                                     \
+  extern DataBuffer& buffer##name;
 
 // A consumer can read one or more buffer
 class Consumer {
 public:
   Consumer();
 
-  virtual void loop() = 0;
   virtual bool isReady() = 0;
   virtual uint32_t readyTime();
 
@@ -72,6 +70,7 @@ public:
   virtual bool onCloseMessageEvent(JsonBuffer& jsonBuffer_, DataCache& cache_);
 
 protected:
+  virtual void consumeBuffers(JsonBuffer& jsonBuffer_);
   int consumeBuffer(JsonBuffer& jsonBuffer_, DataBuffer* buffer_);
   virtual bool send(JsonBuffer& jsonBuffer_);
 

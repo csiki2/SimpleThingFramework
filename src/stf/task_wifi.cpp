@@ -120,7 +120,7 @@ void setupWifiTask(void*) {
   IotWebConfWrapper::setup(ap);
 #  endif
 #  if STFMQTT == 1
-  PubSubClientWrapper::setup();
+  MQTTConsumer::MQTTConsumerObj.setup();
 #  endif
 }
 
@@ -137,7 +137,7 @@ uint32_t loopWifiTask(void*) {
 #  endif
 #  if STFMQTT == 1
   if (connected) {
-    uint32_t toWaitMQTT = PubSubClientWrapper::loop();
+    uint32_t toWaitMQTT = MQTTConsumer::MQTTConsumerObj.loop();
     if (toWaitMQTT != 0 && toWaitMQTT < toWait) toWait = toWaitMQTT;
   }
 #  endif

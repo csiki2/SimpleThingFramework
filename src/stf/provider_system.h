@@ -25,8 +25,6 @@ namespace stf {
 class DataFeeder;
 class DiscoveryBlock;
 
-extern StaticDataBuffer<STF_SYSTEM_QUEUE_SIZE> systemBuffer;
-
 class SystemProvider : public Provider {
 public:
   SystemProvider();

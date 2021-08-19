@@ -25,8 +25,6 @@ namespace stf {
 class DiscoveryBlock;
 class BTDeviceGroup;
 
-extern StaticDataBuffer<STF_BT_QUEUE_SIZE> btBuffer;
-
 class BTProvider : public Provider {
 public:
   BTProvider();

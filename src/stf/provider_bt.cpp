@@ -42,13 +42,11 @@ double beacon_distance(int rssi_, int txPower_) {
   return distance;
 }
 
-StaticDataBuffer<STF_BT_QUEUE_SIZE> btBuffer;
-
 DEFINE_PROVIDERTASK(BTProvider, 4, 0, 0);
 
 BTDeviceGroup BTProvider::_discoveryList;
 
-BTProvider::BTProvider() : Provider(&btBuffer) {
+BTProvider::BTProvider() : Provider(&bufferBTProvider) {
   registerSystemUpdate();
 }
 
@@ -96,7 +94,7 @@ class BTProviderDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
     mac[5] ^= STFBLE_TEST_XOR;
 #endif
 
-    int statFreeBlocksBegin = btBuffer.getFreeBlocks();
+    int statFreeBlocksBegin = bufferBTProvider.getFreeBlocks();
     uint sdCount = ble_device_->getServiceDataCount();
     for (uint sdidx = 0; sdidx < sdCount; sdidx++) {
       std::string data = ble_device_->getServiceData(sdidx);
@@ -111,7 +109,7 @@ class BTProviderDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
         for (uint sfidx = 0; sfidx < BT::_serviceFunctionLength; sfidx++) {
           const BTServiceType& sf = BT::_serviceFunction[sfidx];
           if (sf._uuid == uuid32) {
-            res = sf._func(mac, macType, uuid32, serviceDataBuffer, serviceDataLength, btBuffer);
+            res = sf._func(mac, macType, uuid32, serviceDataBuffer, serviceDataLength, bufferBTProvider);
             if (res != ebtrWrongType) break;
           }
         }
@@ -120,13 +118,13 @@ class BTProviderDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
           STFLOG_WARNING("%s message type %0x from %02x%02x%02x%02x%02x%02x\n", msg, uuid32, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
         } else {
           // Finish the buffer
-          uint freeBlocks = btBuffer.getFreeBlocks();
+          uint freeBlocks = bufferBTProvider.getFreeBlocks();
 
           if (freeBlocks >= 1) { // Generator function for 4-5 elements
             int8_t txpw = ble_device_->haveTXPower() ? ble_device_->getTXPower() : 127;
             int rssiInt = ble_device_->haveRSSI() ? ble_device_->getRSSI() : 127;
             int8_t rssi = rssiInt < -128 ? -128 : (rssiInt > 127 ? 127 : (int8_t)rssiInt);
-            DataBlock& genBlock = btBuffer.nextToWrite(edf__none, edt_Generator, rssi).setPtr((const void*)&generateBTBlocks);
+            DataBlock& genBlock = bufferBTProvider.nextToWrite(edf__none, edt_Generator, rssi).setPtr((const void*)&generateBTBlocks);
             genBlock._value.t32[1] = uuid32;
             genBlock._extra = txpw;
           }
@@ -135,13 +133,13 @@ class BTProviderDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
             EnumDataField fld = edf_servicedata;
             for (uint cpy; serviceDataLength > 0 || fld == edf_servicedata; serviceDataBuffer += cpy, serviceDataLength -= cpy, fld = edf__cont) {
               cpy = serviceDataLength > sizeof(DataBlock::_value) + sizeof(DataBlock::_extra) ? sizeof(DataBlock::_value) + sizeof(DataBlock::_extra) : serviceDataLength;
-              btBuffer.nextToWrite(fld, edt_Raw, cpy + etirFormatHexLower).setRaw(serviceDataBuffer, cpy);
+              bufferBTProvider.nextToWrite(fld, edt_Raw, cpy + etirFormatHexLower).setRaw(serviceDataBuffer, cpy);
             }
             //freeBlocks = btBuffer.getFreeBlocks();
           }
 
-          int statFreeBlocksEnd = btBuffer.getFreeBlocks();
-          btBuffer.closeMessage();
+          int statFreeBlocksEnd = bufferBTProvider.getFreeBlocks();
+          bufferBTProvider.closeMessage();
           BTProviderObj._packetsForwarded++;
           STFLOG_INFO("Total blocks used for the BT messages: %u\n", statFreeBlocksBegin - statFreeBlocksEnd); // not correct, will need fix
         }
@@ -188,7 +186,7 @@ uint BTProvider::loop() {
   NimBLEScan* scan = NimBLEDevice::getScan();
   bool isScanning = scan->isScanning();
   if (isConsumerReady()) {
-    uint32_t readyTime = buffer->getConsumer()->readyTime();
+    uint32_t readyTime = bufferBTProvider.getConsumer()->readyTime();
     if (_discoveryList._connectionTime < readyTime) _discoveryList._connectionTime = readyTime;
     if (!isScanning) scan->start(0, nullptr, false);
   } else {

@@ -24,6 +24,14 @@
 
 namespace stf {
 
+// Buffer connections with the provider objects
+#undef STF_BUFFER_DECLARE
+#define STF_BUFFER_DECLARE(name, size) StaticDataBuffer<size> name;
+#undef STF_BUFFER_PROVIDER
+#define STF_BUFFER_PROVIDER(name, provider) DataBuffer& buffer##provider = name;
+
+STFBUFFERS;
+
 #define getReadIdx()       atomic_load_explicit(&readIdx, ::memory_order_seq_cst)
 #define setReadIdx(value)  atomic_store_explicit(&readIdx, (value) % (2 * size), ::memory_order_seq_cst)
 #define getWriteIdx()      atomic_load_explicit(&writeIdx, ::memory_order_seq_cst)
