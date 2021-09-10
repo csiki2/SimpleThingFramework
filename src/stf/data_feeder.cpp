@@ -26,7 +26,7 @@ namespace stf {
 DataFeeder::DataFeeder(Consumer& consumer_, JsonBuffer& jsonBuffer_) : consumer(consumer_), jsonBuffer(jsonBuffer_) {
 }
 
-DataBlock& DataFeeder::nextToWrite(EnumDataField field_, EnumDataType type_, uint8_t typeInfo_) {
+DataBlock& DataFeeder::nextToWrite(EnumDataField field_, EnumDataType type_, uint8_t typeInfo_, uint8_t extra_) {
   if (validBlock) { // first resolve the block
     jsonBuffer.addDataBlock(block, *cache);
     if (block.isClosedMessage()) consumer.onCloseMessageEvent(jsonBuffer, *cache);
@@ -36,6 +36,7 @@ DataBlock& DataFeeder::nextToWrite(EnumDataField field_, EnumDataType type_, uin
   block._field = field_;
   block._type = type_;
   block._typeInfo = typeInfo_;
+  block._extra = extra_;
 
   validBlock = true;
 

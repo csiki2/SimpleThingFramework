@@ -33,6 +33,7 @@ struct DataCache;
 enum EnumDiscoveryComponent {
   edcSensor = 0,
   edcBinarySensor = 1,
+  edcSwitch = 2,
 };
 
 struct DiscoveryBlock {
@@ -48,7 +49,7 @@ namespace Discovery {
 extern const char* topicConfigComponent[];
 
 // Device info should be added independently...
-uint addDiscoveryBlocks(DataBuffer* buffer_, uint8_t topic_, const DiscoveryBlock** list_, EnumTypeInfoGeneric cacheCmd_ = etigNone, const void* cacheValue_ = nullptr, const char* device_name = nullptr, const char* device_model = nullptr, const char* device_manufacturer = nullptr, const char* device_sw = nullptr);
+uint addDiscoveryBlocks(DataBuffer* buffer_, uint8_t topic_, const DiscoveryBlock** list_, EnumExtraInfo cacheCmd_ = eeiNone, const void* cacheValue_ = nullptr, const char* device_name = nullptr, const char* device_model = nullptr, const char* device_manufacturer = nullptr, const char* device_sw = nullptr);
 
 void generateDiscoveryBlocks(DataFeeder& feeder_, const DataBlock& generatorBlock_, DataCache& cache_);
 void generateDiscoveryBlock(DataFeeder& feeder_, const DataBlock& generatorBlock_, DataCache& cache_, const DiscoveryBlock& discovery_);

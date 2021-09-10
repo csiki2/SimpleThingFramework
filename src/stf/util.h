@@ -20,30 +20,8 @@
 
 #include <stf/os.h>
 
-#ifdef STFTASK_OTA
-
-#  include <stf/provider.h>
-
-#  ifndef STFOTA_PORT
-#    define STFOTA_PORT 3232
-#  endif
-
 namespace stf {
 
-class OTAProvider : public Provider {
-public:
-  OTAProvider();
+int getArrayIndex(const char* str_, uint strLen_, const char* arr_[], uint arrLen_);
 
-  uint loop() override;
-  void setup() override;
-  uint systemDiscovery(DataBuffer* systemBuffer_) override;
-  uint systemUpdate(DataBuffer* systemBuffer_, uint32_t uptimeS_) override;
-  void feedback(const FeedbackInfo& info_) override;
-
-protected:
-  bool enabled;
-};
-
-} // namespace stf
-
-#endif
+}

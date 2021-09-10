@@ -30,7 +30,7 @@ struct DataCache;
 // The features that a type supports from EnumTypeInfoGeneric (and don't use the bits for something else)
 enum EnumTypeSupport {
   etSupportNone = 0,
-  etSupportCache = 1,
+  etSupportSaveToCache = 1,
   etSupportDoubleField = 2
 };
 
@@ -40,29 +40,36 @@ enum EnumDataType {
 #undef E
 };
 
-enum EnumTypeInfoGeneric {
-  etigNone = 0,
+enum EnumExtraInfo {
+  eeiNone = 0,
 
   // 3 bit
-  etigCacheMask = 7 << 4,
-  etigCacheBlock1 = 1 << 4,
-  etigCacheBlock2 = 2 << 4,
-  etigCacheDeviceMAC48 = 3 << 4,
-  etigCacheDeviceMAC64 = 4 << 4,
-  etigCacheDeviceHost = 5 << 4,
-  etigDoubleField = 1 << 7,
+  eeiCacheBlock1 = 1,
+  eeiCacheBlock2 = 2,
+  eeiCacheDeviceMAC48 = 3,
+  eeiCacheDeviceMAC64 = 4,
+  eeiCacheDeviceHost = 5,
+  eeiCacheDeviceMainHost = 6,
+  eeiCacheMask = 7,
+
+  eeiDoubleField = 8,
 };
 
 enum EnumTypeInfoTopic {
-  etitSYStoMQTT = 0, // For now, we might need to move it to _extra
-  etitBTtoMQTT = 1,
+  etitSYS = 0,
+  etitBT = 1,
 
-  etitSubTopicMask = 7,
-  etitConfig = 8,
+  etitTopicSubjectMask = 7,
 
-  etigTopicMask = 15,
-  etigHost = 128
+  etitStateSend = 0 << 3,
+  etitConfig = 1 << 3,
+  etitState = 2 << 3,
+  etitCommand = 3 << 3,
+  etitTopicTypeMask = 3 << 3,
+
 };
+
+EnumTypeInfoTopic findTopicInfo(const char* str_, uint strLen_);
 
 enum EnumTypeInfoDevice {
   etidSource0Name = 1,
@@ -95,7 +102,6 @@ enum EnumTypeInfoString {
   etisSource1Ptr = 0 << 3,
   etisSource1CacheField = 1 << 3,
   etisSource1LocalField = 2 << 3,
-  etisSource1TopicFilter = 3 << 3, // t32
   etisSource1Mask = 3 << 3,
 
   // 2 bit

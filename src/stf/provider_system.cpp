@@ -25,23 +25,27 @@ namespace stf {
 
 DEFINE_PROVIDERTASK(SystemProvider, 3, 0, 0);
 
-SystemProvider::SystemProvider() : Provider(&bufferSystemProvider), lastSystemReport(0ull) {
+SystemProvider::SystemProvider() : Provider(&bufferSystemProvider), lastSystemReport(0), forceSystemReport(false) {
 }
 
 const DiscoveryBlock* SystemProvider::_listSystem[] = {&Discovery::_Uptime_S, &Discovery::_Uptime_D, &Discovery::_Free_Memory, nullptr};
 uint SystemProvider::systemDiscovery(DataBuffer* systemBuffer_) {
-  uint res = Discovery::addDiscoveryBlocks(systemBuffer_, etitSYStoMQTT | etigHost, _listSystem, etigNone, nullptr, hostName, "Test", "community", "0.01");
+  uint res = Discovery::addDiscoveryBlocks(systemBuffer_, etitSYS, _listSystem, eeiNone, nullptr, hostName, "Test", "community", "0.01");
   return res;
 }
 
 uint SystemProvider::systemUpdate(DataBuffer* systemBuffer_, uint32_t uptimeS_) {
   if (systemBuffer_ == nullptr || systemBuffer_->getFreeBlocks() < 4) return 4;
-  systemBuffer_->nextToWrite(edf__topic, edt_Topic, etitSYStoMQTT + etigCacheDeviceHost).setPtr(hostInfo);
+  systemBuffer_->nextToWrite(edf__topic, edt_Topic, etitSYS, eeiCacheDeviceHost).setPtr(hostInfo);
   systemBuffer_->nextToWrite(edf_uptime_s, edt_32, 0).set64(uptimeS_);
   systemBuffer_->nextToWrite(edf_uptime_d, edt_32, 0).set32(uptimeS_ / (24 * 60 * 60));
   systemBuffer_->nextToWrite(edf_ip, edt_Raw, 4 + etirSeparatorDot + etirFormatNumber).setRaw(hostIP4, 4);
-  systemBuffer_->nextToWrite(edf_free_memory, edt_32, 0).set32(ESP.getFreeHeap()).closeMessage();
+  systemBuffer_->nextToWrite(edf_free_memory, edt_32, 0).set32(ESP.getFreeHeap());
   return 0;
+}
+
+void SystemProvider::requestReport() {
+  SystemProviderObj.forceSystemReport = true;
 }
 
 uint SystemProvider::loop() {
@@ -50,7 +54,8 @@ uint SystemProvider::loop() {
   Consumer* cons = bufferSystemProvider.getConsumer();
   if (cons == nullptr || !cons->isReady()) return waitTime;
   uint32_t uptime = uptimeMS64() / 1000;
-  if (lastSystemReport >= cons->readyTime() && lastSystemReport + updateTimeS > uptime) return waitTime; // no report is needed yet
+  if (!forceSystemReport && lastSystemReport >= cons->readyTime() && lastSystemReport + updateTimeS > uptime) return waitTime; // no report is needed yet
+  forceSystemReport = false;
 
   // Generate discovery only once per connection
   int sum = systemUpdate(nullptr, uptime);
@@ -71,9 +76,10 @@ uint SystemProvider::loop() {
 
   lastSystemReport = uptime;
 
+  systemUpdate(&bufferSystemProvider, uptime);
   for (Provider* p = systemHead; p != nullptr; p = p->systemNext)
     p->systemUpdate(&bufferSystemProvider, uptime);
-  systemUpdate(&bufferSystemProvider, uptime); // topic + close message...
+  bufferSystemProvider.closeMessage();
 
   return waitTime;
 }

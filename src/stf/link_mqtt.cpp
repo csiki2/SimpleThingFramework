@@ -36,11 +36,24 @@ MQTTConsumer::MQTTConsumer() : client(eClient) {
   connectionTry = 0;
 }
 
+void MQTTConsumer::callback(char* topic, byte* payload, unsigned int length) {
+  FeedbackInfo info;
+  info.set(topic, payload, length);
+  STFLOG_INFO("Received MQTT message (%s) [%*.*s|%*.*s|%s][%d|%d] - %*.*s\n", topic,
+              info.topicStrLen, info.topicStrLen, info.topicStr,
+              info.idStrLen, info.idStrLen, info.idStr,
+              info.fieldStr,
+              info.topicEnum, info.fieldEnum,
+              length, length, payload);
+  MQTTConsumerObj.broadcastFeedback(info);
+}
+
 void MQTTConsumer::setup() {
   int port = strtol(mqttPort, nullptr, 10);
   STFLOG_INFO("MQTT Server - %s:%d\n", mqttServer, port);
   client.setServer(mqttServer, (uint16_t)port);
   client.setBufferSize(STFMQTT_JSONBUFFER_SIZE);
+  client.setCallback(callback);
 
 #  undef STF_BUFFER_DECLARE
 #  define STF_BUFFER_DECLARE(name, size) MQTTConsumerObj.addBuffer(&name);
@@ -67,6 +80,10 @@ uint32_t MQTTConsumer::loop() {
         logConnected("MQTT server");
         connectionTry = 0;
         connectionTime = uptimeMS64() / 1000;
+        char subscribeStr[32 + strlen(hostName) + strlen(hostInfo->strId)];
+        sprintf(subscribeStr, "home/%s/+/%s/command/#", hostName, hostInfo->strId);
+        STFLOG_INFO("MQTT subscribe to %s\n", subscribeStr);
+        client.subscribe(subscribeStr);
         return 10;
       } else {
         STFLOG_INFO("Unable to connect to the MQTT Server.\n");

@@ -25,33 +25,33 @@ namespace stf {
 
 namespace Discovery {
 
-uint addDiscoveryBlocks(DataBuffer* buffer_, uint8_t topic_, const DiscoveryBlock** list_, EnumTypeInfoGeneric cacheCmd_, const void* cacheValue_, const char* device_name, const char* device_model, const char* device_manufacturer, const char* device_sw) {
+uint addDiscoveryBlocks(DataBuffer* buffer_, uint8_t topic_, const DiscoveryBlock** list_, EnumExtraInfo cacheCmd_, const void* cacheValue_, const char* device_name, const char* device_model, const char* device_manufacturer, const char* device_sw) {
   bool bl1 = device_name != nullptr || device_model != nullptr;
   bool bl2 = device_manufacturer != nullptr || device_sw != nullptr;
-  uint need = (bl1 ? 1 : 0) + (bl2 ? 1 : 0) + (cacheCmd_ != 0) + 1;
+  uint need = (bl1 ? 1 : 0) + (bl2 ? 1 : 0) + (cacheCmd_ != 0 ? 1 : 0) + 1;
 
   if (buffer_ == nullptr || buffer_->getFreeBlocks() < need) return need;
-  switch (cacheCmd_ & etigCacheMask) {
-    case etigCacheDeviceMAC48:
-      if (cacheValue_ != nullptr) buffer_->nextToWrite(edf__none, edt_None, cacheCmd_).setMAC48((const uint8_t*)cacheValue_);
+  switch (cacheCmd_ & eeiCacheMask) {
+    case eeiCacheDeviceMAC48:
+      if (cacheValue_ != nullptr) buffer_->nextToWrite(edf__none, edt_None, 0, cacheCmd_).setMAC48((const uint8_t*)cacheValue_);
       break;
-    case etigCacheDeviceMAC64:
-      if (cacheValue_ != nullptr) buffer_->nextToWrite(edf__none, edt_None, cacheCmd_).setMAC64((const uint8_t*)cacheValue_);
+    case eeiCacheDeviceMAC64:
+      if (cacheValue_ != nullptr) buffer_->nextToWrite(edf__none, edt_None, 0, cacheCmd_).setMAC64((const uint8_t*)cacheValue_);
       break;
-    case etigCacheDeviceHost:
-      if (cacheValue_ != nullptr) buffer_->nextToWrite(edf__none, edt_None, cacheCmd_).setPtr(cacheValue_);
+    case eeiCacheDeviceHost:
+      if (cacheValue_ != nullptr) buffer_->nextToWrite(edf__none, edt_None, 0, cacheCmd_).setPtr(cacheValue_);
       break;
   }
 
-  if (bl1) buffer_->nextToWrite(edf__none, edt_None, etigCacheBlock1).setPtr(device_name, device_model);
-  if (bl2) buffer_->nextToWrite(edf__none, edt_None, etigCacheBlock2).setPtr(device_manufacturer, device_sw);
+  if (bl1) buffer_->nextToWrite(edf__none, edt_None, 0, eeiCacheBlock1).setPtr(device_name, device_model);
+  if (bl2) buffer_->nextToWrite(edf__none, edt_None, 0, eeiCacheBlock2).setPtr(device_manufacturer, device_sw);
   buffer_->nextToWrite(edf__discList, edt_Generator, topic_).setPtr((const void*)&generateDiscoveryBlocks, (void*)list_).closeMessage();
   return 0;
 }
 
 void generateDiscoveryBlock(DataFeeder& feeder_, const DataBlock& generatorBlock_, DataCache& cache_, const DiscoveryBlock& discovery_) {
-  if (generatorBlock_._typeInfo & etigHost)
-    feeder_.nextToWrite(discovery_._field, edt_None, etigCacheDeviceHost).setPtr(hostInfo);
+  if ((generatorBlock_._extra & eeiCacheMask) == eeiCacheDeviceHost)
+    feeder_.nextToWrite(discovery_._field, edt_None, eeiCacheDeviceHost).setPtr(hostInfo);
   else
     cache_._block_device._field = discovery_._field;
   feeder_.nextToWrite(edf__topic, edt_Topic, etitConfig + discovery_._component); // device should be cached already
@@ -59,8 +59,11 @@ void generateDiscoveryBlock(DataFeeder& feeder_, const DataBlock& generatorBlock
     feeder_.nextToWrite(edf_name, edt_String, etisSource0Ptr).setPtr(discovery_._name);
   else
     feeder_.nextToWrite(edf_name, edt_String, etisSource0CacheField + etisCaseSmart);
-  feeder_.nextToWrite(edf_unit_of_measurement, edt_String, etisSource0Ptr).setPtr(discovery_._measure);
-  feeder_.nextToWrite(edf_state_topic, edt_String, etisSource0DeviceId + etisSource1TopicFilter)._value.t32[1] = generatorBlock_._typeInfo & etigTopicMask; // for now...
+  if (discovery_._component != edcSwitch) // Home Assistant doesn't accept a switch with unit_of_measurement
+    feeder_.nextToWrite(edf_unit_of_measurement, edt_String, etisSource0Ptr).setPtr(discovery_._measure);
+  feeder_.nextToWrite(edf_state_topic, edt_Topic, etitState + generatorBlock_._typeInfo);
+  if (discovery_._component == edcSwitch)
+    feeder_.nextToWrite(edf_command_topic, edt_Topic, etitCommand + generatorBlock_._typeInfo);
   feeder_.nextToWrite(edf_unique_id, edt_String, etisSource0MACId + etisSource1CacheField);
   if (discovery_._device_class != nullptr) {
     bool useName = strcmp(discovery_._device_class, "_") == 0;
@@ -78,6 +81,7 @@ void generateDiscoveryBlocks(DataFeeder& feeder_, const DataBlock& generatorBloc
   EnumDataField field = generatorBlock_._field;
   if (field != edf__discElem && field != edf__discList) return;
 
+  if (!cache_._flagDevice) cache_.addBlock(generatorBlock_, eeiCacheDeviceMainHost);
   if (field == edf__discList) {
     const DiscoveryBlock** list = (const DiscoveryBlock**)generatorBlock_._value.tPtr[1];
     for (int idx = 0; *list != nullptr; list++, idx++) generateDiscoveryBlock(feeder_, generatorBlock_, cache_, **list);
@@ -99,6 +103,7 @@ const DiscoveryBlock* _listVoltBattHumTempC[] = {&Discovery::_Volt, &Discovery::
 const char* topicConfigComponent[] = {
     "sensor", // edcSensor
     "binary_sensor", // edcBinarySensor
+    "switch", // edcSwitch
 };
 
 } // namespace Discovery

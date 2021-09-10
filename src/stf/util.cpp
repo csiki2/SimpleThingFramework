@@ -16,34 +16,17 @@
   limitations under the License.
 */
 
-#pragma once
-
-#include <stf/os.h>
-
-#ifdef STFTASK_OTA
-
-#  include <stf/provider.h>
-
-#  ifndef STFOTA_PORT
-#    define STFOTA_PORT 3232
-#  endif
+#include <stf/util.h>
 
 namespace stf {
 
-class OTAProvider : public Provider {
-public:
-  OTAProvider();
-
-  uint loop() override;
-  void setup() override;
-  uint systemDiscovery(DataBuffer* systemBuffer_) override;
-  uint systemUpdate(DataBuffer* systemBuffer_, uint32_t uptimeS_) override;
-  void feedback(const FeedbackInfo& info_) override;
-
-protected:
-  bool enabled;
-};
+int getArrayIndex(const char* str_, uint strLen_, const char* arr_[], uint arrLen_) {
+  if (str_ == nullptr) return -1;
+  for (uint idx = 0; idx < arrLen_; idx++) {
+    const char* cmp = arr_[idx];
+    if (strncmp(str_, cmp, strLen_) == 0 && cmp[strLen_] == 0) return (int)idx;
+  }
+  return -1;
+}
 
 } // namespace stf
-
-#endif

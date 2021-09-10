@@ -22,15 +22,24 @@
 #include <stf/data_type.h>
 #include <stf/mac2strid.h>
 #include <stf/data_discovery.h>
+#include <stf/util.h>
 
 namespace stf {
 
 const char* topicNormalFmt[] = {
-    "SYStoMQTT", // etitSYStoMQTT
-    "BTtoMQTT", // etitBTtoMQTT
+    "SYS", // etitSYS
+    "BT", // etitBT
 };
 
+EnumTypeInfoTopic findTopicInfo(const char* str_, uint strLen_) {
+  return (EnumTypeInfoTopic)getArrayIndex(str_, strLen_, topicNormalFmt, sizeof(topicNormalFmt) / sizeof(topicNormalFmt[0]));
+}
+
 int fnDTNone(char* buffer_, uint len_, const DataBlock& block_, DataCache& cache_) {
+  return -1;
+}
+
+int fnDTCache(char* buffer_, uint len_, const DataBlock& block_, DataCache& cache_) {
   return -1;
 }
 
@@ -40,12 +49,23 @@ int fnDTGenerator(char* buffer_, uint len_, const DataBlock& block_, DataCache& 
 }
 
 int fnDTTopic(char* buffer_, uint len_, const DataBlock& block_, DataCache& cache_) {
-  uint topicIndex = block_._typeInfo & etitSubTopicMask;
+  uint topicIndex = block_._typeInfo & etitTopicSubjectMask;
   int len = -1;
-  if ((block_._typeInfo & etitConfig) == 0) {
-    len = snprintf(buffer_, len_, "home/%s/%s/%s", hostName, topicNormalFmt[topicIndex], cache_._device.info.strId);
-  } else {
-    len = snprintf(buffer_, len_, "homeassistant/%s/%s_%s/config", Discovery::topicConfigComponent[topicIndex], cache_._device.info.strMAC, DataField::list[cache_._block_device._field]);
+  switch (block_._typeInfo & etitTopicTypeMask) {
+    case etitStateSend:
+      len = snprintf(buffer_, len_, "home/%s/%stoMQTT/%s", hostName, topicNormalFmt[topicIndex], cache_._device.info.strId);
+      break;
+    case etitConfig:
+      len = snprintf(buffer_, len_, "homeassistant/%s/%s_%s/config", Discovery::topicConfigComponent[topicIndex], cache_._device.info.strMAC, DataField::list[cache_._block_device._field]);
+      break;
+    case etitState:
+      len = snprintf(buffer_, len_, "+/+/%stoMQTT/%s", topicNormalFmt[topicIndex], cache_._device.info.strId);
+      break;
+    case etitCommand:
+      len = snprintf(buffer_, len_, "home/%s/MQTTto%s/%s/command/%s_%s", hostName, topicNormalFmt[topicIndex], cache_._device.info.strId, cache_._device.info.strMAC, DataField::list[(uint)cache_._block_device._field]);
+      break;
+    default:
+      break;
   }
   return len;
 }
@@ -136,9 +156,6 @@ int fnDTString(char* buffer_, uint len_, const DataBlock& block_, DataCache& cac
     case etisSource1LocalField:
       str1 = DataField::list[(uint)block_._field];
       break;
-    case etisSource1TopicFilter:
-      str1 = topicNormalFmt[block_._value.t32[1]];
-      break;
     default:
       str1 = nullptr;
       break;
@@ -146,8 +163,6 @@ int fnDTString(char* buffer_, uint len_, const DataBlock& block_, DataCache& cac
   int len = -1;
   if ((block_._typeInfo & etisSource0Mask) == etisSource0FmtPtr)
     len = snprintf(buffer_, len_, str0 != nullptr ? str0 : "%s", str1 != nullptr ? str1 : "");
-  else if ((block_._typeInfo & etisSource1Mask) == etisSource1TopicFilter)
-    len = snprintf(buffer_, len_, "+/+/%s/%s", str1 != nullptr ? str1 : "", str0 != nullptr ? str0 : "");
   else
     len = snprintf(buffer_, len_, str1 == nullptr ? "%s" : "%s_%s", str0 != nullptr ? str0 : "", str1);
 

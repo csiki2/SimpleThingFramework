@@ -21,6 +21,7 @@
 #include <stf/data_feeder.h>
 #include <stf/json_buffer.h>
 #include <stf/provider.h>
+#include <stf/util.h>
 
 namespace stf {
 
@@ -52,6 +53,9 @@ uint Provider::systemDiscovery(DataBuffer* systemBuffer_) {
 
 uint Provider::systemUpdate(DataBuffer* systemBuffer_, uint32_t uptimeS_) {
   return 0;
+}
+
+void Provider::feedback(const FeedbackInfo& info_) {
 }
 
 void setupProviderTask(void* ptr_) {
@@ -130,6 +134,42 @@ int Consumer::consumeBuffer(JsonBuffer& jsonBuffer_, DataBuffer* buffer) {
     }
   } while (buffer->hasClosedMessage());
   return messageSent;
+}
+
+void Consumer::broadcastFeedback(const FeedbackInfo& info_) {
+  for (DataBuffer* buffer = bufferHead; buffer != nullptr; buffer = buffer->bufferNext) {
+    for (Provider* provider = buffer->providerHead; provider != nullptr; provider = provider->providerNext)
+      provider->feedback(info_);
+  }
+}
+
+void FeedbackInfo::set(const char* topic_, const uint8_t* payload_, unsigned int length_) {
+  topic = topic_;
+  payload = payload_;
+  payloadLength = length_;
+
+  const char *fndB, *fndE;
+
+  // Received MQTT message (home/SimpleThing_Test/MQTTtoSYS/EspDJ_295138/command/AC67B2295138_ota_switch)
+
+  if ((fndB = strstr(topic, "MQTTto")) != nullptr && (fndE = strchr(fndB, '/')) != nullptr) {
+    topicStr = fndB + 6;
+    topicStrLen = fndE - topicStr;
+    topicEnum = findTopicInfo(topicStr, topicStrLen);
+  } else {
+    topicStr = nullptr;
+    topicStrLen = 0;
+    topicEnum = (EnumTypeInfoTopic)-1;
+  }
+
+  idStr = (fndB = strrchr(topic, '/')) != nullptr ? fndB + 1 : nullptr;
+  fieldStr = (idStr != nullptr && (fndB = strchr(idStr, '_')) != nullptr) ? fndB + 1 : nullptr;
+  idStrLen = fieldStr != nullptr ? fndB - idStr : 0;
+
+  fieldEnum = (EnumDataField)getArrayIndex(fieldStr, strlen(fieldStr), DataField::list, DataField::listNum);
+
+  //const uint8_t mac[8]; TODO
+  //uint macLen;
 }
 
 } // namespace stf

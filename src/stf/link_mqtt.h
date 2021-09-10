@@ -43,6 +43,8 @@ protected:
   MQTTConsumer();
   bool send(JsonBuffer& jsonBuffer_) override;
 
+  static void callback(char* topic, byte* payload, unsigned int length);
+
   StaticJsonBuffer<STFMQTT_JSONBUFFER_SIZE> jsonBuffer;
   uint32_t connectionTime;
   uint connectionTry;

@@ -66,7 +66,7 @@ void JsonBuffer::startElement(const DataBlock& block, DataCache& cache_) {
 
 void JsonBuffer::addDataBlock(const DataBlock& block_, DataCache& cache_) {
   DataType type = DataType::list[block_._type];
-  if ((type._support & etSupportCache) != 0) cache_.addBlock(block_, block_._typeInfo);
+  if ((type._support & etSupportSaveToCache) != 0) cache_.addBlock(block_, block_._extra);
 
   if (type._coreType == ectNone) {
     blockToStr(nullptr, 0, block_, cache_);
@@ -93,7 +93,7 @@ void JsonBuffer::addDataBlock(const DataBlock& block_, DataCache& cache_) {
     else
       setElementFailed();
   }
-  if ((type._support & etSupportDoubleField) == 0 || (block_._typeInfo & etigDoubleField) == 0) return;
+  if ((type._support & etSupportDoubleField) == 0 || (block_._extra & eeiDoubleField) == 0) return;
   // Let's go for one more round :)
   DataBlock block = block_;
   block._field = (EnumDataField)block._extra;
@@ -142,7 +142,7 @@ int JsonBuffer::blockToStr(char* buffer_, uint len_, const DataBlock& block_, Da
     }
   }
 
-  bool qm = type_._coreType == ectString;
+  bool qm = type_._coreType == ectString || (type_._coreType == ectTopic && block_._field != edf__topic);
   if (continueElem) {
     if (buffer_[-1] == '\"') {
       clen = 1;

@@ -31,7 +31,7 @@ class DataFeeder {
 public:
   DataFeeder(Consumer& consumer_, JsonBuffer& jsonBuffer_);
 
-  DataBlock& nextToWrite(EnumDataField field_, EnumDataType type_, uint8_t typeInfo_);
+  DataBlock& nextToWrite(EnumDataField field_, EnumDataType type_, uint8_t typeInfo_, uint8_t extra_ = 0);
 
 protected:
   Consumer& consumer;

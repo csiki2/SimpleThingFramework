@@ -33,10 +33,13 @@ public:
   uint systemDiscovery(DataBuffer* systemBuffer_) override;
   uint systemUpdate(DataBuffer* systemBuffer_, uint32_t uptimeS_) override;
 
+  static void requestReport();
+
   static const DiscoveryBlock* _listSystem[];
 
 protected:
   uint32_t lastSystemReport;
+  bool forceSystemReport;
 };
 
 } // namespace stf

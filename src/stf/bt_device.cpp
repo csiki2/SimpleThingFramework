@@ -31,7 +31,7 @@ int32_t GetBufferValue(const uint8_t* buff_, uint8_t size_) {
 uint AddBTDiscoveryBlocks(DataBuffer& buffer_, const DiscoveryBlock** list_, const uint8_t* mac_, const char* device_name, const char* device_model, const char* device_manufacturer, const char* device_sw) {
   BTDevice* dev = BTProvider::_discoveryList.findOrCreateDevice(mac_);
   if (dev == nullptr || dev->_discovery) return 0;
-  uint res = Discovery::addDiscoveryBlocks(&buffer_, etitBTtoMQTT, list_, etigCacheDeviceMAC48, mac_, device_name, device_model, device_manufacturer, device_sw);
+  uint res = Discovery::addDiscoveryBlocks(&buffer_, etitBT, list_, eeiCacheDeviceMAC48, mac_, device_name, device_model, device_manufacturer, device_sw);
   if (res == 0) dev->_discovery = true;
   return res;
 }
@@ -66,7 +66,7 @@ EnumBTResult BTServiceMiBacon(const uint8_t* mac_, uint8_t macType_, uint32_t uu
     case 13:
       if (vlen != 4) return ebtrWrongType;
       if (buffer_.getFreeBlocks() < 3) return ebtrSmallBuffer;
-      buffer_.nextToWrite(edf_tempc, edt_Float, 1 + etigDoubleField).setFloat(GetBufferValue(serviceData_ + 14, 2) / 10.f, GetBufferValue(serviceData_ + 16, 2) / 10.f)._extra = edf_hum;
+      buffer_.nextToWrite(edf_tempc, edt_Float, 1, eeiDoubleField).setFloat(GetBufferValue(serviceData_ + 14, 2) / 10.f, GetBufferValue(serviceData_ + 16, 2) / 10.f)._extra = edf_hum;
       //buffer_.nextToWrite(edf_hum, edt_Float, 1).setFloat(GetBufferValue(serviceData_ + 16, 2) / 10.f);
       break;
 
@@ -74,7 +74,7 @@ EnumBTResult BTServiceMiBacon(const uint8_t* mac_, uint8_t macType_, uint32_t uu
       return ebtrWrongType;
       break;
   }
-  buffer_.nextToWrite(edf__topic, edt_Topic, etitBTtoMQTT + etigCacheDeviceMAC48).setMAC48(mac_);
+  buffer_.nextToWrite(edf__topic, edt_Topic, etitBT, eeiCacheDeviceMAC48).setMAC48(mac_);
   buffer_.nextToWrite(edf_model, edt_String, 0).setPtr((const char*)model);
 
   return ebtrResolved;
@@ -89,8 +89,8 @@ EnumBTResult BTServiceTelinkLYWSD03MMC_atc1441_pvvx(const uint8_t* mac_, uint8_t
   if (AddBTDiscoveryBlocks(buffer_, Discovery::_listVoltBattHumTempC, mac_, "MiJia ", model, "Xiaomi, Telink", "pvvx") != 0) return ebtrSmallBuffer;
 
   if (buffer_.getFreeBlocks() < 5) return ebtrSmallBuffer;
-  buffer_.nextToWrite(edf__topic, edt_Topic, etitBTtoMQTT + etigCacheDeviceMAC48).setMAC48(mac_);
-  buffer_.nextToWrite(edf_tempc, edt_Float, 2 + etigDoubleField).setFloat(GetBufferValue(serviceData_ + 6, 2) / 100.f, GetBufferValue(serviceData_ + 8, 2) / 100.f)._extra = edf_hum;
+  buffer_.nextToWrite(edf__topic, edt_Topic, etitBT, eeiCacheDeviceMAC48).setMAC48(mac_);
+  buffer_.nextToWrite(edf_tempc, edt_Float, 2, eeiDoubleField).setFloat(GetBufferValue(serviceData_ + 6, 2) / 100.f, GetBufferValue(serviceData_ + 8, 2) / 100.f)._extra = edf_hum;
   buffer_.nextToWrite(edf_batt, edt_32, 0).set32(GetBufferValue(serviceData_ + 12, 1));
   buffer_.nextToWrite(edf_volt, edt_Float, 3).setFloat(GetBufferValue(serviceData_ + 10, 2) / 1000.f);
   buffer_.nextToWrite(edf_model, edt_String, 0).setPtr((const char*)model);

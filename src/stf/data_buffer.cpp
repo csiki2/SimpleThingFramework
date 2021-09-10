@@ -26,7 +26,7 @@ namespace stf {
 
 // Buffer connections with the provider objects
 #undef STF_BUFFER_DECLARE
-#define STF_BUFFER_DECLARE(name, size) StaticDataBuffer<size> name;
+#define STF_BUFFER_DECLARE(name, size) StaticDataBuffer<size> __attribute__((init_priority(1000))) name;
 #undef STF_BUFFER_PROVIDER
 #define STF_BUFFER_PROVIDER(name, provider) DataBuffer& buffer##provider = name;
 
@@ -80,7 +80,7 @@ DataBlock& DataBuffer::getWriteBlock() {
   return buffer[widx % size];
 }
 
-DataBlock& DataBuffer::nextToWrite(EnumDataField field_, EnumDataType type_, uint8_t typeInfo_) {
+DataBlock& DataBuffer::nextToWrite(EnumDataField field_, EnumDataType type_, uint8_t typeInfo_, uint8_t extra_) {
   int widx = getWriteIdx();
   DataBlock& block = buffer[widx % size];
 
@@ -88,6 +88,7 @@ DataBlock& DataBuffer::nextToWrite(EnumDataField field_, EnumDataType type_, uin
   block._field = field_;
   block._type = type_;
   block._typeInfo = typeInfo_;
+  block._extra = extra_;
 
   // This is ok: although it can be read, shouldn't be used till a "closeMessageFlag" block is not in the queue
   setWriteIdx(widx + 1);

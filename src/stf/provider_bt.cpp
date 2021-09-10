@@ -201,7 +201,7 @@ const DiscoveryBlock BTTransmitted = {edf_bt_forwarded, edcSensor, "BT Packets F
 
 const DiscoveryBlock* BTProvider::_listSystem[] = {&BTReceived, &BTTransmitted, nullptr};
 uint BTProvider::systemDiscovery(DataBuffer* systemBuffer_) {
-  uint res = Discovery::addDiscoveryBlocks(systemBuffer_, etitSYStoMQTT | etigHost, _listSystem);
+  uint res = Discovery::addDiscoveryBlocks(systemBuffer_, etitSYS, _listSystem);
   return res;
 }
 
