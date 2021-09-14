@@ -51,7 +51,7 @@ uint addDiscoveryBlocks(DataBuffer* buffer_, uint8_t topic_, const DiscoveryBloc
 
 void generateDiscoveryBlock(DataFeeder& feeder_, const DataBlock& generatorBlock_, DataCache& cache_, const DiscoveryBlock& discovery_) {
   if ((generatorBlock_._extra & eeiCacheMask) == eeiCacheDeviceHost)
-    feeder_.nextToWrite(discovery_._field, edt_None, eeiCacheDeviceHost).setPtr(hostInfo);
+    feeder_.nextToWrite(discovery_._field, edt_None, eeiCacheDeviceHost).setPtr(&Host::_info);
   else
     cache_._block_device._field = discovery_._field;
   feeder_.nextToWrite(edf__topic, edt_Topic, etitConfig + discovery_._component); // device should be cached already

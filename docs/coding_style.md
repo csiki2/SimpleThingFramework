@@ -5,12 +5,12 @@
 ### Variables
 - All local variable should be **camelCase** and should not contain underscore
 - All global variable should be **PascalCase** with a g_ prefix
-- There should be no global function (not even in the stf namespace), should be added as a static class method
+- There should be no global function (not even in the stf namespace), should be added as a static class method instead
 
 ### Classes
 - All class name should be **PascalCase**
 - All method name should be **camelCase** (static "method" as well)
-- All member variable should be **camelCase** (static "member" as well) with an **underscore** prefix (`_`)
+- All member variable should be **camelCase** (static "member" as well) with an **underscore** prefix (\_)
 
 ### Struct
 - Struct should be used where POD initialization is favored; struct should have no constructors

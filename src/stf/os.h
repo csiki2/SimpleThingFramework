@@ -27,11 +27,6 @@
 
 namespace stf {
 
-uint32_t startingFreeHeap();
-
-inline uint32_t uptimeMS32() { return millis(); }
-inline uint64_t uptimeMS64() { return esp_timer_get_time() / 1000ULL; }
-
 inline void mutexLock(xSemaphoreHandle handle) {
   for (; xSemaphoreTake(handle, portMAX_DELAY) != pdPASS;)
     ;
@@ -41,11 +36,25 @@ inline void mutexUnlock(xSemaphoreHandle handle) { xSemaphoreGive(handle); }
 void logConnected(const char* name);
 void logConnecting(const char* name, uint tryNum);
 void logMemoryUsage(int level);
-void os_setup();
 
-extern const char* hostName;
-extern const char* hostPassword;
-extern uint8_t hostIP4[4];
-extern const struct DeviceInfo* hostInfo;
+class Host {
+private:
+  static DeviceBlock _block;
+
+public:
+  static void setup();
+
+  static inline uint32_t uptimeMS32() { return millis(); }
+  static inline uint64_t uptimeMS64() { return esp_timer_get_time() / 1000ULL; }
+  static inline uint32_t uptimeSec32() { return (uint32_t)(esp_timer_get_time() / 1000000ULL); }
+
+  static constexpr DeviceInfo& _info = _block.info;
+
+  static const char* _name;
+  static const char* _password;
+  static uint8_t _ip4[4];
+
+  static uint32_t _startingFreeHeap;
+};
 
 } // namespace stf

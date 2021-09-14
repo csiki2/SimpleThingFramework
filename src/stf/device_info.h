@@ -18,8 +18,6 @@
 
 #pragma once
 
-#include <stf/os.h>
-
 namespace stf {
 
 struct DeviceInfo {

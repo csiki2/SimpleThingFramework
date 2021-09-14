@@ -71,17 +71,17 @@ uint32_t MQTTConsumer::loop() {
   }
   STFLED_COMMAND(STFLEDEVENT_MQTT_NOT_CONNECTED);
   if (WiFi.isConnected()) {
-    uint64_t uptime = uptimeMS64();
+    uint64_t uptime = Host::uptimeMS64();
     if (uptime - connectionTime > 5000 || connectionTry == 0) {
       connectionTry++;
       connectionTime = uptime;
       logConnecting("MQTT server", connectionTry);
-      if (client.connect(hostName, mqttUser, mqttPassword)) {
+      if (client.connect(Host::_name, mqttUser, mqttPassword)) {
         logConnected("MQTT server");
         connectionTry = 0;
-        connectionTime = uptimeMS64() / 1000;
-        char subscribeStr[32 + strlen(hostName) + strlen(hostInfo->strId)];
-        sprintf(subscribeStr, "home/%s/+/%s/command/#", hostName, hostInfo->strId);
+        connectionTime = Host::uptimeSec32();
+        char subscribeStr[32 + strlen(Host::_name) + strlen(Host::_info.strId)];
+        sprintf(subscribeStr, "home/%s/+/%s/command/#", Host::_name, Host::_info.strId);
         STFLOG_INFO("MQTT subscribe to %s\n", subscribeStr);
         client.subscribe(subscribeStr);
         return 10;

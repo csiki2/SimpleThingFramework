@@ -138,14 +138,14 @@ void ledPlayDirect(int8_t led, int8_t chn, uint8_t brightness, LedSample* sample
   uint32_t timeMS;
   if (uptimeSync != (int32_t)-1) {
     if (uptimeSync < 0) uptimeSync = (uptimeSync % loopTime) + loopTime;
-    uint64_t uptime64 = uptimeMS64();
+    uint64_t uptime64 = Host::uptimeMS64();
     uint32_t uptime32 = (uint32_t)uptime64;
     uint32_t diff = (uint32_t)(uptime64 % (uint64_t)loopTime);
     timeMS = uptime32 - diff + uptimeSync;
     if (diff < uptimeSync) timeMS -= loopTime;
     if (timeMS != uptime32 && loopCount > 0 && loopCount < 255) loopCount++;
   } else {
-    timeMS = uptimeMS32();
+    timeMS = Host::uptimeMS32();
   }
 
   mutexLock(leds[led].mutex);
@@ -179,7 +179,7 @@ void setupLedTask(void*) {
 }
 
 uint32_t loopLedTask(void*) {
-  uint32_t timeMS = uptimeMS32();
+  uint32_t timeMS = Host::uptimeMS32();
   for (int led = 0; led < STFLED_NUM; led++) {
     int ledValue = 0;
     mutexLock(leds[led].mutex);
@@ -225,7 +225,7 @@ uint32_t loopLedTask(void*) {
       setLed(led, leds[led].value = ledValue);
     mutexUnlock(leds[led].mutex);
   }
-  uint32_t ellapsed = uptimeMS32() - timeMS;
+  uint32_t ellapsed = Host::uptimeMS32() - timeMS;
   return ellapsed < 10 ? 10 - ellapsed : 1;
 }
 

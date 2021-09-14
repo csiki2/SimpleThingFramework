@@ -24,46 +24,39 @@
 
 namespace stf {
 
-// Default value
-DeviceBlock hostBlock;
-const DeviceInfo* hostInfo = &hostBlock.info;
-const char* hostName = STF_THING_NAME;
-const char* hostPassword = STF_THING_PASSWORD;
-uint8_t hostIP4[4] = { 0, 0, 0, 0 };
+// Host - default values
+DeviceBlock Host::_block;
+const char* Host::_name = STF_THING_NAME;
+const char* Host::_password = STF_THING_PASSWORD;
+uint8_t Host::_ip4[4] = {0, 0, 0, 0};
+uint32_t Host::_startingFreeHeap = 0;
 
-uint32_t savedStartingFreeHeap = 0;
+void Host::setup() {
+  _startingFreeHeap = ESP.getFreeHeap();
+  Serial.begin(115200);
+  STFLOG_INFO("Starting ESP32... free memory %u (%u)\n", _startingFreeHeap, ESP.getHeapSize());
 
-uint32_t startingFreeHeap() { return savedStartingFreeHeap; }
+  mac_to_strid_integrity_check();
+
+  esp_efuse_mac_get_default(_block.macBuffer);
+  _block.create(nullptr, 6);
+
+  STFLOG_INFO("Host id: %s\n", _info.strId);
+}
 
 void logConnected(const char* name) {
   uint32_t heap = ESP.getFreeHeap();
-  STFLOG_INFO("Connected to the %s, memory used/free %6u/%6u\n", name, startingFreeHeap() - heap, heap);
+  STFLOG_INFO("Connected to the %s, memory used/free %6u/%6u\n", name, Host::_startingFreeHeap - heap, heap);
 }
 
 void logConnecting(const char* name, uint tryNum) {
   uint32_t heap = ESP.getFreeHeap();
-  STFLOG_INFO("Connecting to the %s (try %u), memory used/free %6u/%6u\n", name, tryNum, startingFreeHeap() - heap, heap);
+  STFLOG_INFO("Connecting to the %s (try %u), memory used/free %6u/%6u\n", name, tryNum, Host::_startingFreeHeap - heap, heap);
 }
 
 void logMemoryUsage(int level) {
   uint32_t heap = ESP.getFreeHeap();
-  STFLOG_PRINT(level, "memory used/free %6u/%6u\n", startingFreeHeap() - heap, heap);
-}
-
-const char* hw = "Hello World!";
-const char* hw2 = nullptr;
-
-void os_setup() {
-  Serial.begin(115200);
-  stf::savedStartingFreeHeap = ESP.getFreeHeap();
-  STFLOG_INFO(hw2 = "Starting ESP32... free memory %u (%u)\n", stf::savedStartingFreeHeap, ESP.getHeapSize());
-
-  mac_to_strid_integrity_check();
-
-  esp_efuse_mac_get_default(hostBlock.macBuffer);
-  hostBlock.create(nullptr, 6);
-
-  STFLOG_INFO("Host id: %s\n", hostInfo->strId);
+  STFLOG_PRINT(level, "memory used/free %6u/%6u\n", Host::_startingFreeHeap - heap, heap);
 }
 
 } // namespace stf

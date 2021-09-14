@@ -16,7 +16,7 @@
   limitations under the License.
 */
 
-#include <stf/device_info.h>
+#include <stf/os.h>
 #include <stf/mac2strid.h>
 
 namespace stf {

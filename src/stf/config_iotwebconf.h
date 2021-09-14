@@ -37,7 +37,7 @@ protected:
   struct APObject {
     WebServer webServer;
     DNSServer dnsServer;
-    uint64_t setupTimer;
+    uint32_t setupTimer;
   } * apObject;
 
   IotWebConf webConf;

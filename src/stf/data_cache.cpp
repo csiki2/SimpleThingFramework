@@ -41,7 +41,7 @@ void DataCache::addBlock(const DataBlock& block_, uint8_t cmd_) {
       break;
     case eeiCacheDeviceMainHost:
       setBlockDevice(block_);
-      _device.info = *hostInfo;
+      _device.info = Host::_info;
       _device.createMissing();
       break;
     default:

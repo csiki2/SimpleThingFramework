@@ -24,7 +24,7 @@ namespace stf {
 
 IotWebConfWrapper::IotWebConfWrapper(APObject* ap)
     : apObject(ap),
-      webConf(hostName, ap != nullptr ? &ap->dnsServer : (DNSServer*)nullptr, ap != nullptr ? &ap->webServer : (WebServer*)nullptr, STF_THING_PASSWORD, STFWIFI_IOTWEBCONF_CONFVERSION)
+      webConf(Host::_name, ap != nullptr ? &ap->dnsServer : (DNSServer*)nullptr, ap != nullptr ? &ap->webServer : (WebServer*)nullptr, STF_THING_PASSWORD, STFWIFI_IOTWEBCONF_CONFVERSION)
 #  if STFMQTT == 1
       ,
       paramMQTTGroup("mqtt", "MQTT configuration"),
@@ -58,7 +58,7 @@ void IotWebConfWrapper::setup(bool forceAP) {
 
 uint32_t IotWebConfWrapper::loop() {
   if (gObj == nullptr || gObj->apObject == nullptr) return 0;
-  if (gObj->apObject->setupTimer + (STFCONF_SETUP_TIMEOUT * 1000) < uptimeMS64()) {
+  if (gObj->apObject->setupTimer + STFCONF_SETUP_TIMEOUT < Host::uptimeSec32()) {
     STFLOG_WARNING("Portal timeout reached, reset the device.");
     ESP.restart();
   }
@@ -76,8 +76,8 @@ bool IotWebConfWrapper::init() {
   if (apObject == nullptr) {
     if (!webConf.loadConfig() && wifiSSID[0] == 0) return false;
     iotwebconf::WifiAuthInfo wifiAuthInfo = webConf.getWifiAuthInfo();
-    hostName = webConf.getThingName();
-    hostPassword = webConf.getApPasswordParameter()->valueBuffer;
+    Host::_name = webConf.getThingName();
+    Host::_password = webConf.getApPasswordParameter()->valueBuffer;
     wifiSSID = wifiAuthInfo.ssid;
     wifiPassword = wifiAuthInfo.password;
     mode = "load config";
@@ -140,7 +140,7 @@ public:
 
 void IotWebConfWrapper::handleAPRoot() {
   IotWebConf& webConf = gObj->webConf;
-  if (gObj->apObject->setupTimer == 0) gObj->apObject->setupTimer = uptimeMS64();
+  if (gObj->apObject->setupTimer == 0) gObj->apObject->setupTimer = Host::uptimeSec32();
   if (webConf.handleCaptivePortal()) return;
 
   // this is practically a hack due to the divided responsibility and the lack of proper interfaces, but the result is nice

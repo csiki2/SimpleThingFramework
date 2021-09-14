@@ -63,7 +63,7 @@ OTAProvider::OTAProvider() : Provider(&bufferSystemProvider) {
 }
 
 void OTAProvider::setup() {
-  ArduinoOTA.setHostname(hostName).setPort(STFOTA_PORT).setPassword(hostPassword);
+  ArduinoOTA.setHostname(Host::_name).setPort(STFOTA_PORT).setPassword(Host::_password);
   ArduinoOTA.onStart(otaOnStart).onEnd(otaOnEnd).onProgress(otaOnProgress).onError(otaOnError);
 }
 

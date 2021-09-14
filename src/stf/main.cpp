@@ -19,7 +19,7 @@
 #include <stf/task.h>
 
 void setup() {
-  stf::os_setup();
+  stf::Host::setup();
   stf::task_setup();
 }
 

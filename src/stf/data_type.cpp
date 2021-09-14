@@ -53,7 +53,7 @@ int fnDTTopic(char* buffer_, uint len_, const DataBlock& block_, DataCache& cach
   int len = -1;
   switch (block_._typeInfo & etitTopicTypeMask) {
     case etitStateSend:
-      len = snprintf(buffer_, len_, "home/%s/%stoMQTT/%s", hostName, topicNormalFmt[topicIndex], cache_._device.info.strId);
+      len = snprintf(buffer_, len_, "home/%s/%stoMQTT/%s", Host::_name, topicNormalFmt[topicIndex], cache_._device.info.strId);
       break;
     case etitConfig:
       len = snprintf(buffer_, len_, "homeassistant/%s/%s_%s/config", Discovery::topicConfigComponent[topicIndex], cache_._device.info.strMAC, DataField::list[cache_._block_device._field]);
@@ -62,7 +62,7 @@ int fnDTTopic(char* buffer_, uint len_, const DataBlock& block_, DataCache& cach
       len = snprintf(buffer_, len_, "+/+/%stoMQTT/%s", topicNormalFmt[topicIndex], cache_._device.info.strId);
       break;
     case etitCommand:
-      len = snprintf(buffer_, len_, "home/%s/MQTTto%s/%s/command/%s_%s", hostName, topicNormalFmt[topicIndex], cache_._device.info.strId, cache_._device.info.strMAC, DataField::list[(uint)cache_._block_device._field]);
+      len = snprintf(buffer_, len_, "home/%s/MQTTto%s/%s/command/%s_%s", Host::_name, topicNormalFmt[topicIndex], cache_._device.info.strId, cache_._device.info.strMAC, DataField::list[(uint)cache_._block_device._field]);
       break;
     default:
       break;
@@ -99,8 +99,8 @@ int fnDTDevice(char* buffer_, uint len_, const DataBlock& block_, DataCache& cac
       len += res;
     }
   }
-  if (!cache_._device.info.cmpMAC(*hostInfo)) {
-    int res = snprintf(buffer_ + len, len_ - len, "%s\"via_device\":\"%s\"", len != 0 ? "," : "", hostInfo->strId);
+  if (!cache_._device.info.cmpMAC(Host::_info)) {
+    int res = snprintf(buffer_ + len, len_ - len, "%s\"via_device\":\"%s\"", len != 0 ? "," : "", Host::_info.strId);
     if (res < 0) return res;
     len += res;
   }

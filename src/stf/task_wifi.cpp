@@ -76,7 +76,7 @@ bool checkForConfigAtSetup() {
 }
 
 void checkForConfigAtLoop() {
-  if (resetCounterForSetup != 0 && uptimeMS64() > 2000) {
+  if (resetCounterForSetup != 0 && Host::uptimeSec32() >= 2) {
     resetCounterForSetup = 0;
     Preferences setupStore;
     setupStore.begin(setupStoreName);
@@ -90,13 +90,13 @@ void checkForConfigAtLoop() {
 namespace stf {
 
 bool checkConnection() {
-  uint64_t uptime = uptimeMS64();
+  uint64_t uptime = Host::uptimeMS64();
   if (WiFi.isConnected()) {
     STFLED_COMMAND(STFLEDEVENT_WIFI_CONNECTED);
     if (wifiConnectionTry > 0) {
       wifiConnectionTry = 0;
       wifiConnectionTime = uptime;
-      memcpy(hostIP4, &WiFi.localIP()[0], 4);
+      memcpy(Host::_ip4, &WiFi.localIP()[0], 4);
       logConnected("wifi");
     }
     return true;
@@ -104,7 +104,7 @@ bool checkConnection() {
   STFLED_COMMAND(STFLEDEVENT_WIFI_NOT_CONNECTED);
   if (uptime - wifiConnectionTime > 5000 || wifiConnectionTry == 0) {
     const char* wifi_hostName = WiFi.getHostname();
-    if (wifi_hostName == NULL || strcmp(hostName, wifi_hostName) != 0) WiFi.setHostname(hostName);
+    if (wifi_hostName == NULL || strcmp(Host::_name, wifi_hostName) != 0) WiFi.setHostname(Host::_name);
     wifiConnectionTry++;
     wifiConnectionTime = uptime;
     WiFi.mode(WIFI_STA);
