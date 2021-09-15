@@ -166,7 +166,7 @@ void FeedbackInfo::set(const char* topic_, const uint8_t* payload_, unsigned int
   fieldStr = (idStr != nullptr && (fndB = strchr(idStr, '_')) != nullptr) ? fndB + 1 : nullptr;
   idStrLen = fieldStr != nullptr ? fndB - idStr : 0;
 
-  fieldEnum = (EnumDataField)getArrayIndex(fieldStr, strlen(fieldStr), DataField::list, DataField::listNum);
+  fieldEnum = (EnumDataField)Helper::getArrayIndex(fieldStr, strlen(fieldStr), DataField::list, DataField::listNum);
 
   //const uint8_t mac[8]; TODO
   //uint macLen;

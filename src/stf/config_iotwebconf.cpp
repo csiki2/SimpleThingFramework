@@ -20,6 +20,8 @@
 
 #if STFWIFI_IOTWEBCONF == 1
 
+#include <stf/util.h>
+
 namespace stf {
 
 IotWebConfWrapper::IotWebConfWrapper(APObject* ap)
@@ -96,7 +98,7 @@ bool IotWebConfWrapper::init() {
   stf::mqttPassword = IotWebConfWrapper::mqttPassword;
 #  endif
   STFLOG_INFO("IotWebConf init %s mode, ", mode);
-  logMemoryUsage(STFLOG_LEVEL_INFO);
+  Log::memoryUsage(STFLOG_LEVEL_INFO);
   return true;
 }
 

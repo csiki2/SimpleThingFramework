@@ -22,6 +22,16 @@
 
 namespace stf {
 
-int getArrayIndex(const char* str_, uint strLen_, const char* arr_[], uint arrLen_);
+class Log {
+public:
+  static void connected(const char* name);
+  static void connecting(const char* name, uint tryNum);
+  static void memoryUsage(int level);
+};
 
-}
+class Helper {
+public:
+  static int getArrayIndex(const char* str, uint strLen, const char* arr[], uint arrLen);
+};
+
+} // namespace stf

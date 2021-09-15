@@ -32,7 +32,7 @@ const char* topicNormalFmt[] = {
 };
 
 EnumTypeInfoTopic findTopicInfo(const char* str_, uint strLen_) {
-  return (EnumTypeInfoTopic)getArrayIndex(str_, strLen_, topicNormalFmt, sizeof(topicNormalFmt) / sizeof(topicNormalFmt[0]));
+  return (EnumTypeInfoTopic)Helper::getArrayIndex(str_, strLen_, topicNormalFmt, sizeof(topicNormalFmt) / sizeof(topicNormalFmt[0]));
 }
 
 int fnDTNone(char* buffer_, uint len_, const DataBlock& block_, DataCache& cache_) {

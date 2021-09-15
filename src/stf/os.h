@@ -27,15 +27,23 @@
 
 namespace stf {
 
-inline void mutexLock(xSemaphoreHandle handle) {
-  for (; xSemaphoreTake(handle, portMAX_DELAY) != pdPASS;)
-    ;
-}
-inline void mutexUnlock(xSemaphoreHandle handle) { xSemaphoreGive(handle); }
+class Mutex {
+public:
+  inline Mutex() { _handle = xSemaphoreCreateMutex(); }
+  inline ~Mutex() { vSemaphoreDelete(_handle); }
 
-void logConnected(const char* name);
-void logConnecting(const char* name, uint tryNum);
-void logMemoryUsage(int level);
+  inline void lock() {
+    for (; xSemaphoreTake(_handle, portMAX_DELAY) != pdPASS;)
+      ;
+  }
+  inline void unlock() { xSemaphoreGive(_handle); }
+
+  Mutex(const Mutex&) = delete;
+  Mutex& operator=(const Mutex&) = delete;
+
+protected:
+  xSemaphoreHandle _handle;
+};
 
 class Host {
 private:

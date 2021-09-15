@@ -23,6 +23,7 @@
 #  include <stf/task.h>
 
 #  include <driver/ledc.h>
+#  include <mutex>
 
 namespace stf {
 
@@ -121,10 +122,9 @@ public:
     value = 0;
     for (int idx = 0; idx < STFLED_CHANNELS; idx++)
       channels[idx].startTime = ~0;
-    mutex = xSemaphoreCreateMutex();
   }
   LedChannel channels[STFLED_CHANNELS];
-  xSemaphoreHandle mutex;
+  Mutex mutex;
   int value;
 };
 
@@ -147,15 +147,15 @@ void ledPlayDirect(int8_t led, int8_t chn, uint8_t brightness, LedSample* sample
   } else {
     timeMS = Host::uptimeMS32();
   }
-
-  mutexLock(leds[led].mutex);
-  channel.loopTime = loopTime;
-  channel.sampleElemTime = sampleElemTime;
-  channel.sample = sample;
-  channel.brightness = brightness;
-  channel.loopCount = loopCount;
-  channel.startTime = timeMS;
-  mutexUnlock(leds[led].mutex);
+  {
+    std::lock_guard<Mutex> lock(leds[led].mutex);
+    channel.loopTime = loopTime;
+    channel.sampleElemTime = sampleElemTime;
+    channel.sample = sample;
+    channel.brightness = brightness;
+    channel.loopCount = loopCount;
+    channel.startTime = timeMS;
+  }
 }
 
 void setLed(int idx, int value) {
@@ -182,7 +182,7 @@ uint32_t loopLedTask(void*) {
   uint32_t timeMS = Host::uptimeMS32();
   for (int led = 0; led < STFLED_NUM; led++) {
     int ledValue = 0;
-    mutexLock(leds[led].mutex);
+    std::lock_guard<Mutex> lock(leds[led].mutex);
     for (int channel = 0; channel < STFLED_CHANNELS; channel++) {
       LedChannel& channelObj = leds[led].channels[channel];
       if (channelObj.startTime == ~0) continue;
@@ -223,7 +223,6 @@ uint32_t loopLedTask(void*) {
     }
     if (leds[led].value != ledValue)
       setLed(led, leds[led].value = ledValue);
-    mutexUnlock(leds[led].mutex);
   }
   uint32_t ellapsed = Host::uptimeMS32() - timeMS;
   return ellapsed < 10 ? 10 - ellapsed : 1;

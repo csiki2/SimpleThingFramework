@@ -22,6 +22,7 @@
 
 #  include <stf/data_block.h>
 #  include <stf/provider.h>
+#  include <stf/util.h>
 
 #  include <WiFi.h>
 #  include <stdlib.h>
@@ -75,9 +76,9 @@ uint32_t MQTTConsumer::loop() {
     if (uptime - connectionTime > 5000 || connectionTry == 0) {
       connectionTry++;
       connectionTime = uptime;
-      logConnecting("MQTT server", connectionTry);
+      Log::connecting("MQTT server", connectionTry);
       if (client.connect(Host::_name, mqttUser, mqttPassword)) {
-        logConnected("MQTT server");
+        Log::connected("MQTT server");
         connectionTry = 0;
         connectionTime = Host::uptimeSec32();
         char subscribeStr[32 + strlen(Host::_name) + strlen(Host::_info.strId)];

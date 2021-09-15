@@ -44,19 +44,4 @@ void Host::setup() {
   STFLOG_INFO("Host id: %s\n", _info.strId);
 }
 
-void logConnected(const char* name) {
-  uint32_t heap = ESP.getFreeHeap();
-  STFLOG_INFO("Connected to the %s, memory used/free %6u/%6u\n", name, Host::_startingFreeHeap - heap, heap);
-}
-
-void logConnecting(const char* name, uint tryNum) {
-  uint32_t heap = ESP.getFreeHeap();
-  STFLOG_INFO("Connecting to the %s (try %u), memory used/free %6u/%6u\n", name, tryNum, Host::_startingFreeHeap - heap, heap);
-}
-
-void logMemoryUsage(int level) {
-  uint32_t heap = ESP.getFreeHeap();
-  STFLOG_PRINT(level, "memory used/free %6u/%6u\n", Host::_startingFreeHeap - heap, heap);
-}
-
 } // namespace stf

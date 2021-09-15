@@ -20,11 +20,26 @@
 
 namespace stf {
 
-int getArrayIndex(const char* str_, uint strLen_, const char* arr_[], uint arrLen_) {
-  if (str_ == nullptr) return -1;
-  for (uint idx = 0; idx < arrLen_; idx++) {
-    const char* cmp = arr_[idx];
-    if (strncmp(str_, cmp, strLen_) == 0 && cmp[strLen_] == 0) return (int)idx;
+void Log::connected(const char* name) {
+  uint32_t heap = ESP.getFreeHeap();
+  STFLOG_INFO("Connected to the %s, memory used/free %6u/%6u\n", name, Host::_startingFreeHeap - heap, heap);
+}
+
+void Log::connecting(const char* name, uint tryNum) {
+  uint32_t heap = ESP.getFreeHeap();
+  STFLOG_INFO("Connecting to the %s (try %u), memory used/free %6u/%6u\n", name, tryNum, Host::_startingFreeHeap - heap, heap);
+}
+
+void Log::memoryUsage(int level) {
+  uint32_t heap = ESP.getFreeHeap();
+  STFLOG_PRINT(level, "memory used/free %6u/%6u\n", Host::_startingFreeHeap - heap, heap);
+}
+
+int Helper::getArrayIndex(const char* str, uint strLen, const char* arr[], uint arrLen) {
+  if (str == nullptr) return -1;
+  for (uint idx = 0; idx < arrLen; idx++) {
+    const char* cmp = arr[idx];
+    if (strncmp(str, cmp, strLen) == 0 && cmp[strLen] == 0) return (int)idx;
   }
   return -1;
 }

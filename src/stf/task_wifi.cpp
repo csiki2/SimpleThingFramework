@@ -21,6 +21,7 @@
 #if STFTASK_WIFI == 1
 
 #  include <stf/task.h>
+#  include <stf/util.h>
 
 #  if STFWIFI_IOTWEBCONF == 1
 #    include <stf/config_iotwebconf.h>
@@ -97,7 +98,7 @@ bool checkConnection() {
       wifiConnectionTry = 0;
       wifiConnectionTime = uptime;
       memcpy(Host::_ip4, &WiFi.localIP()[0], 4);
-      logConnected("wifi");
+      Log::connected("wifi");
     }
     return true;
   }
@@ -109,7 +110,7 @@ bool checkConnection() {
     wifiConnectionTime = uptime;
     WiFi.mode(WIFI_STA);
     WiFi.begin(wifiSSID, wifiPassword);
-    logConnecting("wifi", wifiConnectionTry);
+    Log::connecting("wifi", wifiConnectionTry);
   }
   return false;
 }
