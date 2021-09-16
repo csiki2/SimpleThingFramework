@@ -101,20 +101,14 @@ class BTProviderDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
       NimBLEUUID uuid = ble_device_->getServiceDataUUID(sdidx);
 
       uint8_t bs = uuid.bitSize();
-      EnumBTResult res = ebtrWrongType;
+      EnumBTResult res = EnumBTResult::Unknown;
       if (bs == 16 || bs == 32) { // We support only 16 or 32 bit uuid
         uint32_t uuid32 = bs == 16 ? (uint32_t)uuid.getNative()->u16.value : uuid.getNative()->u32.value;
         const uint8_t* serviceDataBuffer = (const uint8_t*)data.data();
         uint serviceDataLength = data.length();
-        for (uint sfidx = 0; sfidx < BT::_serviceFunctionLength; sfidx++) {
-          const BTServiceType& sf = BT::_serviceFunction[sfidx];
-          if (sf._uuid == uuid32) {
-            res = sf._func(mac, macType, uuid32, serviceDataBuffer, serviceDataLength, bufferBTProvider);
-            if (res != ebtrWrongType) break;
-          }
-        }
-        if (res != ebtrResolved) {
-          const char* msg = res == ebtrWrongType ? "Unknown " : "No buffer for the";
+        res = BTResolver::resolve(mac, macType, uuid32, serviceDataBuffer, serviceDataLength, bufferBTProvider);
+        if (res != EnumBTResult::Resolved) {
+          const char* msg = res == EnumBTResult::Unknown ? "Unknown " : "No buffer for the";
           STFLOG_WARNING("%s message type %0x from %02x%02x%02x%02x%02x%02x\n", msg, uuid32, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
         } else {
           // Finish the buffer

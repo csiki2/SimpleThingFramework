@@ -25,6 +25,8 @@
 #include <stf/settings.h>
 #include <stf/device_info.h>
 
+#define STFATTR_PACKED __attribute__((packed))
+
 namespace stf {
 
 class Mutex {

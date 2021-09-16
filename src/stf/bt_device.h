@@ -19,30 +19,43 @@
 #pragma once
 
 #include <stf/data_block.h>
+#include <stf/data_discovery.h>
 
 namespace stf {
 
 class DataBuffer;
 
-enum EnumBTResult {
-  ebtrResolved = 0,
-  ebtrWrongType = 1,
-  ebtrSmallBuffer = 2
+enum class EnumBTResult {
+  Resolved = 0,
+  Unknown = 1,
+  SmallBuffer = 2
 };
 
-typedef EnumBTResult (*BTServiceFunction)(const uint8_t* mac_, uint8_t macType_, uint32_t uuid_, const uint8_t* serviceData_, uint serviceDataLength_, DataBuffer& buffer_);
+class BTResolver {
+public:
+  static EnumBTResult resolve(const uint8_t* mac, uint8_t macType, uint32_t uuid, const uint8_t* serviceData, uint serviceDataLength, DataBuffer& buffer);
 
-struct BTServiceType {
-  uint32_t _uuid;
-  BTServiceFunction _func;
+protected:
+  static int32_t getBufferValue(const uint8_t* buffer, uint8_t size);
+  static uint addDiscoveryBlocks(DataBuffer& buffer, const DiscoveryBlock** list, const uint8_t* mac, const char* deviceName, const char* deviceModel, const char* deviceManufacturer, const char* deviceSW);
+
+  struct ServiceType {
+    uint32_t uuid;
+    EnumBTResult (*func)(const uint8_t* mac, uint8_t macType, uint32_t uuid, const uint8_t* serviceData, uint serviceDataLength, DataBuffer& buffer);
+  };
+  static const ServiceType _serviceFunctions[];
+
+  static EnumBTResult serviceMiBacon(const uint8_t* mac, uint8_t macType, uint32_t uuid, const uint8_t* serviceData, uint serviceDataLength, DataBuffer& buffer);
+  static EnumBTResult serviceTelinkLYWSD03MMC_atc1441_pvvx(const uint8_t* mac, uint8_t macType, uint32_t uuid, const uint8_t* serviceData, uint serviceDataLength, DataBuffer& buffer);
 };
 
-struct __attribute__((packed)) BTDevice {
+class STFATTR_PACKED BTDevice {
+public:
   BTDevice() {
     _whiteList = _blackList = _discovery = false;
     _mac[0] = 0xff;
   }
-  union __attribute__((packed)) {
+  union STFATTR_PACKED {
     uint8_t _mac[6];
     uint16_t _mac16[3];
     uint32_t _mac32[1];
@@ -58,18 +71,13 @@ public:
   BTDeviceGroup();
 
   void updateDevices();
-  BTDevice* findDevice(const uint8_t* mac_);
-  BTDevice* findOrCreateDevice(const uint8_t* mac_);
+  BTDevice* findDevice(const uint8_t* mac);
+  BTDevice* findOrCreateDevice(const uint8_t* mac);
 
   uint32_t _connectionTime;
   uint32_t _discoveryTime;
 
   std::vector<BTDevice*> _devices;
 };
-
-namespace BT {
-extern const BTServiceType _serviceFunction[];
-extern const uint _serviceFunctionLength;
-} // namespace BT
 
 } // namespace stf
