@@ -32,27 +32,27 @@ public:
   static uint32_t loop();
 
 protected:
-  static IotWebConfWrapper* gObj;
+  static IotWebConfWrapper* _obj;
 
   struct APObject {
     WebServer webServer;
     DNSServer dnsServer;
     uint32_t setupTimer;
-  } * apObject;
+  } * _apObject;
 
-  IotWebConf webConf;
+  IotWebConf _webConf;
 
 #  if STFMQTT == 1
-  char mqttServer[STFCONF_PARAM_SIZE];
-  char mqttPort[6];
-  char mqttUser[STFCONF_PARAM_SIZE];
-  char mqttPassword[2 * STFCONF_PARAM_SIZE];
+  char _mqttServer[STFCONF_PARAM_SIZE];
+  char _mqttPort[6];
+  char _mqttUser[STFCONF_PARAM_SIZE];
+  char _mqttPassword[2 * STFCONF_PARAM_SIZE];
 
-  iotwebconf::ParameterGroup paramMQTTGroup;
-  iotwebconf::TextParameter paramMQTTServer;
-  iotwebconf::NumberParameter paramMQTTPort;
-  iotwebconf::TextParameter paramMQTTUser;
-  iotwebconf::PasswordParameter paramMQTTPassword;
+  iotwebconf::ParameterGroup _paramMQTTGroup;
+  iotwebconf::TextParameter _paramMQTTServer;
+  iotwebconf::NumberParameter _paramMQTTPort;
+  iotwebconf::TextParameter _paramMQTTUser;
+  iotwebconf::PasswordParameter _paramMQTTPassword;
 #  endif
 
   IotWebConfWrapper(APObject* ap);

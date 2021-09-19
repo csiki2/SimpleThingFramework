@@ -20,82 +20,82 @@
 
 #if STFWIFI_IOTWEBCONF == 1
 
-#include <stf/util.h>
+#  include <stf/util.h>
 
 namespace stf {
 
 IotWebConfWrapper::IotWebConfWrapper(APObject* ap)
-    : apObject(ap),
-      webConf(Host::_name, ap != nullptr ? &ap->dnsServer : (DNSServer*)nullptr, ap != nullptr ? &ap->webServer : (WebServer*)nullptr, STF_THING_PASSWORD, STFWIFI_IOTWEBCONF_CONFVERSION)
+    : _apObject(ap),
+      _webConf(Host::_name, ap != nullptr ? &ap->dnsServer : (DNSServer*)nullptr, ap != nullptr ? &ap->webServer : (WebServer*)nullptr, STF_THING_PASSWORD, STFWIFI_IOTWEBCONF_CONFVERSION)
 #  if STFMQTT == 1
       ,
-      paramMQTTGroup("mqtt", "MQTT configuration"),
-      paramMQTTServer("Server", "mqtt_serv", mqttServer, sizeof(mqttServer), STFMQTT_SERVER),
-      paramMQTTPort("Port", "mqtt_port", mqttPort, sizeof(mqttPort), STFMQTT_PORT),
-      paramMQTTUser("User", "mqtt_user", mqttUser, sizeof(mqttUser), STFMQTT_USER),
-      paramMQTTPassword("Password", "mqtt_pass", mqttPassword, sizeof(mqttPassword), STFMQTT_PASSWORD)
+      _paramMQTTGroup("mqtt", "MQTT configuration"),
+      _paramMQTTServer("Server", "mqtt_serv", _mqttServer, sizeof(_mqttServer), STFMQTT_SERVER),
+      _paramMQTTPort("Port", "mqtt_port", _mqttPort, sizeof(_mqttPort), STFMQTT_PORT),
+      _paramMQTTUser("User", "mqtt_user", _mqttUser, sizeof(_mqttUser), STFMQTT_USER),
+      _paramMQTTPassword("Password", "mqtt_pass", _mqttPassword, sizeof(_mqttPassword), STFMQTT_PASSWORD)
 #  endif
 {
-  if (apObject != nullptr) apObject->setupTimer = 0;
+  if (_apObject != nullptr) _apObject->setupTimer = 0;
 
-  webConf.getWifiSsidParameter()->defaultValue = STFWIFI_SSID;
-  webConf.getWifiPasswordParameter()->defaultValue = STFWIFI_PASSWORD;
+  _webConf.getWifiSsidParameter()->defaultValue = STFWIFI_SSID;
+  _webConf.getWifiPasswordParameter()->defaultValue = STFWIFI_PASSWORD;
 }
 
 IotWebConfWrapper::~IotWebConfWrapper() {
-  if (apObject != nullptr) delete apObject;
-  gObj = nullptr;
+  if (_apObject != nullptr) delete _apObject;
+  _obj = nullptr;
 }
 
-IotWebConfWrapper* IotWebConfWrapper::gObj = nullptr;
+IotWebConfWrapper* IotWebConfWrapper::_obj = nullptr;
 
 void IotWebConfWrapper::setup(bool forceAP) {
-  if (gObj != nullptr) return;
-  gObj = new IotWebConfWrapper(forceAP ? new APObject : nullptr);
-  if (gObj->init()) return;
-  delete gObj;
-  gObj = new IotWebConfWrapper(new APObject);
-  gObj->init();
+  if (_obj != nullptr) return;
+  _obj = new IotWebConfWrapper(forceAP ? new APObject : nullptr);
+  if (_obj->init()) return;
+  delete _obj;
+  _obj = new IotWebConfWrapper(new APObject);
+  _obj->init();
 }
 
 uint32_t IotWebConfWrapper::loop() {
-  if (gObj == nullptr || gObj->apObject == nullptr) return 0;
-  if (gObj->apObject->setupTimer + STFCONF_SETUP_TIMEOUT < Host::uptimeSec32()) {
+  if (_obj == nullptr || _obj->_apObject == nullptr) return 0;
+  if (_obj->_apObject->setupTimer + STFCONF_SETUP_TIMEOUT < Host::uptimeSec32()) {
     STFLOG_WARNING("Portal timeout reached, reset the device.");
     ESP.restart();
   }
-  gObj->webConf.doLoop();
+  _obj->_webConf.doLoop();
   STFLED_COMMAND(STFLEDEVENT_SETUP);
   return 10;
 }
 
 bool IotWebConfWrapper::init() {
-  webConf.disableBlink();
-  webConf.skipApStartup();
+  _webConf.disableBlink();
+  _webConf.skipApStartup();
   addParameters();
 
   const char* mode;
-  if (apObject == nullptr) {
-    if (!webConf.loadConfig() && wifiSSID[0] == 0) return false;
-    iotwebconf::WifiAuthInfo wifiAuthInfo = webConf.getWifiAuthInfo();
-    Host::_name = webConf.getThingName();
-    Host::_password = webConf.getApPasswordParameter()->valueBuffer;
+  if (_apObject == nullptr) {
+    if (!_webConf.loadConfig() && wifiSSID[0] == 0) return false;
+    iotwebconf::WifiAuthInfo wifiAuthInfo = _webConf.getWifiAuthInfo();
+    Host::_name = _webConf.getThingName();
+    Host::_password = _webConf.getApPasswordParameter()->valueBuffer;
     wifiSSID = wifiAuthInfo.ssid;
     wifiPassword = wifiAuthInfo.password;
     mode = "load config";
   } else {
-    apObject->webServer.on("/", [] { gObj->handleAPRoot(); });
-    apObject->webServer.on("/config", [] { gObj->webConf.handleConfig(); });
-    apObject->webServer.onNotFound([] { gObj->webConf.handleNotFound(); });
-    webConf.init();
-    webConf.forceApMode(true);
+    _apObject->webServer.on("/", [] { _obj->handleAPRoot(); });
+    _apObject->webServer.on("/config", [] { _obj->_webConf.handleConfig(); });
+    _apObject->webServer.onNotFound([] { _obj->_webConf.handleNotFound(); });
+    _webConf.init();
+    _webConf.forceApMode(true);
     mode = "access point";
   }
 #  if STFMQTT == 1
-  stf::mqttServer = IotWebConfWrapper::mqttServer;
-  stf::mqttPort = IotWebConfWrapper::mqttPort;
-  stf::mqttUser = IotWebConfWrapper::mqttUser;
-  stf::mqttPassword = IotWebConfWrapper::mqttPassword;
+  stf::mqttServer = IotWebConfWrapper::_mqttServer;
+  stf::mqttPort = IotWebConfWrapper::_mqttPort;
+  stf::mqttUser = IotWebConfWrapper::_mqttUser;
+  stf::mqttPassword = IotWebConfWrapper::_mqttPassword;
 #  endif
   STFLOG_INFO("IotWebConf init %s mode, ", mode);
   Log::memoryUsage(STFLOG_LEVEL_INFO);
@@ -104,11 +104,11 @@ bool IotWebConfWrapper::init() {
 
 void IotWebConfWrapper::addParameters() {
 #  if STFMQTT == 1
-  paramMQTTGroup.addItem(&paramMQTTServer);
-  paramMQTTGroup.addItem(&paramMQTTPort);
-  paramMQTTGroup.addItem(&paramMQTTUser);
-  paramMQTTGroup.addItem(&paramMQTTPassword);
-  webConf.addParameterGroup(&paramMQTTGroup);
+  _paramMQTTGroup.addItem(&_paramMQTTServer);
+  _paramMQTTGroup.addItem(&_paramMQTTPort);
+  _paramMQTTGroup.addItem(&_paramMQTTUser);
+  _paramMQTTGroup.addItem(&_paramMQTTPassword);
+  _webConf.addParameterGroup(&_paramMQTTGroup);
 #  endif
 }
 
@@ -141,13 +141,13 @@ public:
 };
 
 void IotWebConfWrapper::handleAPRoot() {
-  IotWebConf& webConf = gObj->webConf;
-  if (gObj->apObject->setupTimer == 0) gObj->apObject->setupTimer = Host::uptimeSec32();
+  IotWebConf& webConf = _obj->_webConf;
+  if (_obj->_apObject->setupTimer == 0) _obj->_apObject->setupTimer = Host::uptimeSec32();
   if (webConf.handleCaptivePortal()) return;
 
   // this is practically a hack due to the divided responsibility and the lack of proper interfaces, but the result is nice
   iotwebconf::HtmlFormatProvider* orig = webConf.getHtmlFormatProvider();
-  WebRequestWrapper localWebRequestWrapper(&gObj->apObject->webServer);
+  WebRequestWrapper localWebRequestWrapper(&_obj->_apObject->webServer);
   HtmlFormatProvider localHtmlFormatProvider;
   webConf.setHtmlFormatProvider(&localHtmlFormatProvider);
   webConf.handleConfig(&localWebRequestWrapper);
