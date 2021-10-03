@@ -16,15 +16,17 @@
   limitations under the License.
 */
 
-#include <stf/task.h>
+#include <stf/os.h>
 
 void setup() {
   stf::Host::setup();
+  stf::TaskRoot::setupTasks();
   stf::task_setup();
 }
 
 void loop() {
   STFLED_COMMAND(STFLEDEVENT_WATCHDOG);
-  uint wait = stf::task_loop();
-  delay(wait);
+  uint wait1 = stf::task_loop();
+  uint wait2 = stf::TaskRoot::loopTasks();
+  delay(wait1<wait2 ? wait1 : wait2);
 }

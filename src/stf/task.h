@@ -18,9 +18,57 @@
 
 #pragma once
 
-#include <stf/os.h>
-
 namespace stf {
+
+struct TaskDescriptor2;
+
+class TaskRoot {
+public:
+  TaskRoot();
+  virtual ~TaskRoot();
+  virtual void setup();
+  virtual uint loop() = 0;
+
+  //protected:
+  TaskRoot(const TaskRoot&) = delete;
+  TaskRoot& operator=(const TaskRoot&) = delete;
+
+  TaskHandle_t _handle;
+  const TaskDescriptor2* _descriptorPtr;
+
+  void initTask(const TaskDescriptor2* descriptor);
+  static TaskRoot* _head;
+  TaskRoot* _next;
+  static int _count;
+
+protected:
+  static void setupTasks();
+  static void loopTask(void* ptr);
+  static uint loopTasks();
+
+  friend void ::setup();
+  friend void ::loop();
+};
+
+struct TaskDescriptor2 {
+  const TaskRoot* task;
+  const char* taskName;
+  uint32_t taskStackSize;
+  uint8_t taskCore;
+  uint8_t taskOrder;
+};
+
+template <class T>
+class Task : public TaskRoot {
+public:
+  inline Task() { initTask(&_descriptor); }
+  //protected:
+  static T _obj;
+  static const TaskDescriptor2 _descriptor;
+};
+
+template <class T>
+T Task<T>::_obj;
 
 typedef void (*TaskSetupFunction)(void*);
 typedef uint (*TaskLoopFunction)(void*);

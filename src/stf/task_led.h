@@ -35,33 +35,55 @@
 #endif
 
 #ifndef STFLED_COMMAND
-#  define STFLED_COMMAND(event) stf::ledPlayEvent(event)
+#  define STFLED_COMMAND(event) stf::LedTask::ledPlayEvent(event)
 #endif
 
+#include <stf/task.h>
+
 namespace stf {
+
 struct LedSample {
-  inline LedSample(uint8_t* data_, uint32_t size_) : data(data_), size(size_) {}
   uint8_t* data;
   uint32_t size;
 };
 
+class LedEvent;
+class LedObject;
+
+class LedTask : public Task<LedTask> {
+public:
+  virtual void setup() override;
+  virtual uint loop() override;
+
+  static void ledPlayEvent(int event);
+  static void ledPlayDirect(int8_t led, int8_t chn, uint8_t brightness, LedSample* sample, uint16_t sampleElemTime, uint8_t loopCount, uint32_t loopTime, int32_t uptimeSync);
+  static void ledRegisterEvent(int event, int8_t led, int8_t chn, uint8_t brightness, LedSample* sample, uint16_t sampleElemTime, uint8_t loopCount, uint32_t loopTime, int32_t uptimeSync);
+
+  static void registerLedEvents();
+  static void registerDefaultLedEvents();
+
+protected:
+  static void setLed(int idx, int value);
+
+  static LedEvent ledEvents[STFLED_MAXEVENTS];
+  static uint8_t ledPins[];
+  static uint8_t ledPWM[];
+
+  static LedObject leds[];
+};
+
+extern template class Task<LedTask>;
+
 #define STFLEDSAMPLE_MASK          63
 #define STFLEDSAMPLE_INTERPOLATION 64
 #define STFLEDSAMPLE_INTERRUPT     128
-#define STFLED_SAMPLE(name, data...)      \
-  uint8_t ledSampleData##name[] = {data}; \
-  LedSample ledSample##name(ledSampleData##name, sizeof(ledSampleData##name));
+#define STFLED_SAMPLE(name, data...)        \
+  uint8_t g_ledSampleData##name[] = {data}; \
+  LedSample g_ledSample##name = {g_ledSampleData##name, sizeof(g_ledSampleData##name)};
 
-extern LedSample ledSample0;
-extern LedSample ledSample010;
-extern LedSample ledSample01010;
-extern LedSample ledSampleSmooth;
-
-void ledPlayEvent(int event);
-void ledPlayDirect(int8_t led, int8_t chn, uint8_t brightness, LedSample* sample, uint16_t sampleElemTime, uint8_t loopCount, uint32_t loopTime, int32_t uptimeSync);
-void ledRegisterEvent(int event, int8_t led, int8_t chn, uint8_t brightness, LedSample* sample, uint16_t sampleElemTime, uint8_t loopCount, uint32_t loopTime, int32_t uptimeSync);
-
-void registerLedEvents();
-void registerDefaultLedEvents();
+extern LedSample g_ledSample0;
+extern LedSample g_ledSample010;
+extern LedSample g_ledSample01010;
+extern LedSample g_ledSampleSmooth;
 
 } // namespace stf

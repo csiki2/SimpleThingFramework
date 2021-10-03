@@ -16,9 +16,71 @@
   limitations under the License.
 */
 
-#include <stf/task.h>
+#include <stf/os.h>
 
 namespace stf {
+
+TaskRoot::TaskRoot() {
+}
+
+TaskRoot::~TaskRoot() {
+}
+
+void TaskRoot::initTask(const TaskDescriptor2* descriptor) {
+  _handle = nullptr;
+  _descriptorPtr = descriptor;
+  uint8_t order = descriptor->taskOrder;
+  TaskRoot** task = &_head;
+  while (*task != nullptr && (*task)->_descriptorPtr->taskOrder <= order)
+    task = &((*task)->_next);
+  _next = *task;
+  (*task) = this;
+  _count++;
+}
+
+void TaskRoot::setup() {
+}
+
+TaskRoot* TaskRoot::_head = nullptr;
+int TaskRoot::_count = 0;
+
+void TaskRoot::setupTasks() {
+  STFLOG_INFO("TaskRoot::setupTasks started.\n");
+  for (TaskRoot* tr = TaskRoot::_head; tr != nullptr; tr = tr->_next) {
+    STFLOG_INFO("Calling setup method for %s\n", tr->_descriptorPtr->taskName);
+    tr->setup();
+  }
+  STFLOG_INFO("Total number of tasks: %d\n", TaskRoot::_count);
+
+  STFLOG_INFO("TaskRoot::setupTasks - rts task creation\n");
+  for (TaskRoot* tr = TaskRoot::_head; tr != nullptr; tr = tr->_next) {
+    const TaskDescriptor2* desc = tr->_descriptorPtr;
+    if (desc->taskStackSize != 0) {
+      int core = desc->taskCore == tskNO_AFFINITY || desc->taskCore < portNUM_PROCESSORS ? desc->taskCore : 0;
+      xTaskCreatePinnedToCore(loopTask, desc->taskName, desc->taskStackSize, (void*)tr, 1, &tr->_handle, core);
+    }
+  }
+  STFLOG_INFO("TaskRoot::setupTasks ended.\n");
+}
+
+void TaskRoot::loopTask(void* ptr) {
+  TaskRoot* tr = (TaskRoot*)ptr;
+  for (;;) {
+    uint wait = tr->loop();
+    delay(wait);
+  }
+}
+
+uint TaskRoot::loopTasks() {
+  uint wait = 500;
+  for (TaskRoot* tr = TaskRoot::_head; tr != nullptr; tr = tr->_next) {
+    if (tr->_descriptorPtr->taskStackSize == 0) {
+      uint waitLocal = tr->loop();
+      if (wait > waitLocal) wait = waitLocal;
+    }
+  }
+  return wait;
+}
 
 TaskRegister* TaskRegister::_head = nullptr;
 

@@ -19,6 +19,7 @@
 #pragma once
 
 #include "../stf_user_config.h"
+#include <stf/task.h>
 
 // str id buffer has to be minimum 20 character long buffer (see mac2strid)
 #define STF_STRID_SIZE 20
