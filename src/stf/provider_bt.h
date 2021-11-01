@@ -24,6 +24,7 @@ namespace stf {
 
 class DiscoveryBlock;
 class BTDeviceGroup;
+class DataFeeder;
 
 class BTProvider : public Provider {
 public:
@@ -31,12 +32,18 @@ public:
 
   uint loop() override;
   void setup() override;
-  uint systemDiscovery(DataBuffer* systemBuffer_) override;
-  uint systemUpdate(DataBuffer* systemBuffer_, uint32_t uptimeS_) override;
+  uint systemDiscovery(DataBuffer* systemBuffer) override;
+  uint systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS) override;
+
+  static double beaconDistance(int rssi, int txPower);
+  static void generateBTBlocks(DataFeeder& feeder, const DataBlock& generatorBlock, DataCache& cache);
 
   uint32_t _packetLastReset;
   volatile uint16_t _packetsScanned;
   volatile uint16_t _packetsForwarded;
+
+  static const DiscoveryBlock _received;
+  static const DiscoveryBlock _transmitted;
 
   static BTDeviceGroup _discoveryList;
   static const DiscoveryBlock* _listSystem[];

@@ -32,8 +32,8 @@ void DeviceBlock::reset() {
 void DeviceBlock::create(const uint8_t* mac, uint macLen) {
   if (mac != nullptr) memcpy(macBuffer, mac, macLen);
   info.macLen = macLen;
-  mac_to_macid(strMACBuffer, macBuffer, info.macLen);
-  mac_to_strid(strIdBuffer, macBuffer, info.macLen);
+  Mac::toMacId(strMACBuffer, macBuffer, info.macLen);
+  Mac::toStrId(strIdBuffer, macBuffer, info.macLen);
 
   info.mac = macBuffer;
   info.strMAC = strMACBuffer;
@@ -44,12 +44,12 @@ void DeviceBlock::createMissing() {
   if (info.strMAC == nullptr) {
     info.strMAC = strMACBuffer;
     strMACBuffer[0] = 0;
-    if (info.macLen != 0) mac_to_macid(strMACBuffer, info.mac, info.macLen);
+    if (info.macLen != 0) Mac::toMacId(strMACBuffer, info.mac, info.macLen);
   }
   if (info.strId == nullptr) {
     info.strId = strIdBuffer;
     strIdBuffer[0] = 0;
-    if (info.macLen != 0) mac_to_strid(strIdBuffer, info.mac, info.macLen);
+    if (info.macLen != 0) Mac::toStrId(strIdBuffer, info.mac, info.macLen);
   }
 }
 

@@ -25,6 +25,8 @@
 
 #  if STFWIFI_IOTWEBCONF == 1
 #    include <stf/config_iotwebconf.h>
+#    include <Preferences.h>
+#    include <rom/rtc.h>
 #  endif
 #  if STFMQTT == 1
 #    include <stf/link_mqtt.h>
@@ -34,91 +36,68 @@
 
 namespace stf {
 
-class NetTask : public Task<NetTask> {
-public:
-  virtual void setup() override;
-  virtual uint loop() override;
-};
-
 template <>
 const TaskDescriptor Task<NetTask>::_descriptor = {&_obj, "NetTask", 0, 0, 2};
 template class Task<NetTask>;
 
-uint64_t wifiConnectionTime = 0;
-uint wifiConnectionTry = 0;
-
-const char* wifiSSID = STFWIFI_SSID;
-const char* wifiPassword = STFWIFI_PASSWORD;
+const char* NetTask::_wifiSSID = STFWIFI_SSID;
+const char* NetTask::_wifiPassword = STFWIFI_PASSWORD;
 
 #  if STFMQTT == 1
-const char* mqttServer = STFMQTT_SERVER;
-const char* mqttPort = STFMQTT_PORT;
-const char* mqttUser = STFMQTT_USER;
-const char* mqttPassword = STFMQTT_PASSWORD;
+const char* NetTask::_mqttServer = STFMQTT_SERVER;
+const char* NetTask::_mqttPort = STFMQTT_PORT;
+const char* NetTask::_mqttUser = STFMQTT_USER;
+const char* NetTask::_mqttPassword = STFMQTT_PASSWORD;
 #  endif
-} // namespace stf
 
 #  if STFWIFI_IOTWEBCONF == 1
 
-#    include <Preferences.h>
-#    include <rom/rtc.h>
-
-namespace stf {
-
-int8_t resetCounterForSetup = 0;
-
-const char setupStoreName[] = "setup";
-const char setupResetsPreference[] = "resets";
-
-bool checkForConfigAtSetup() {
+bool NetTask::checkForConfigAtSetup() {
   Preferences setupStore;
-  setupStore.begin(setupStoreName);
-  int8_t resetsOrig = resetCounterForSetup = setupStore.getInt(setupResetsPreference, 0);
+  setupStore.begin(_setupStoreName);
+  int8_t resetsOrig = _resetCounterForSetup = setupStore.getInt(_setupResetsPreference, 0);
 
   RESET_REASON r0 = rtc_get_reset_reason(0);
-  STFLOG_INFO("Reset reasons: %d - reset counter %d\n", r0, resetCounterForSetup);
+  STFLOG_INFO("Reset reasons: %d - reset counter %d\n", r0, _resetCounterForSetup);
 
   bool res = false;
-  if (r0 != POWERON_RESET || (res = (++resetCounterForSetup >= 3))) resetCounterForSetup = 0;
-  if (resetsOrig != resetCounterForSetup) setupStore.putInt(setupResetsPreference, resetCounterForSetup);
+  if (r0 != POWERON_RESET || (res = (++_resetCounterForSetup >= 3))) _resetCounterForSetup = 0;
+  if (resetsOrig != _resetCounterForSetup) setupStore.putInt(_setupResetsPreference, _resetCounterForSetup);
   return res;
 }
 
-void checkForConfigAtLoop() {
-  if (resetCounterForSetup != 0 && Host::uptimeSec32() >= 2) {
-    resetCounterForSetup = 0;
+void NetTask::checkForConfigAtLoop() {
+  if (_resetCounterForSetup != 0 && Host::uptimeSec32() >= 2) {
+    _resetCounterForSetup = 0;
     Preferences setupStore;
-    setupStore.begin(setupStoreName);
-    setupStore.putInt(setupResetsPreference, 0);
+    setupStore.begin(_setupStoreName);
+    setupStore.putInt(_setupResetsPreference, 0);
   }
 }
 
-} // namespace stf
 #  endif
 
-namespace stf {
-
-bool checkConnection() {
+bool NetTask::checkConnection() {
   uint64_t uptime = Host::uptimeMS64();
   if (WiFi.isConnected()) {
     STFLED_COMMAND(STFLEDEVENT_WIFI_CONNECTED);
-    if (wifiConnectionTry > 0) {
-      wifiConnectionTry = 0;
-      wifiConnectionTime = uptime;
+    if (_wifiConnectionTry > 0) {
+      _wifiConnectionTry = 0;
+      _wifiConnectionTime = uptime;
       memcpy(Host::_ip4, &WiFi.localIP()[0], 4);
       Log::connected("wifi");
     }
     return true;
   }
   STFLED_COMMAND(STFLEDEVENT_WIFI_NOT_CONNECTED);
-  if (uptime - wifiConnectionTime > 5000 || wifiConnectionTry == 0) {
+  if (uptime - _wifiConnectionTime > 5000 || _wifiConnectionTry == 0) {
     const char* wifi_hostName = WiFi.getHostname();
     if (wifi_hostName == NULL || strcmp(Host::_name, wifi_hostName) != 0) WiFi.setHostname(Host::_name);
-    wifiConnectionTry++;
-    wifiConnectionTime = uptime;
+    _wifiConnectionTry++;
+    _wifiConnectionTime = uptime;
     WiFi.mode(WIFI_STA);
-    WiFi.begin(wifiSSID, wifiPassword);
-    Log::connecting("wifi", wifiConnectionTry);
+    WiFi.begin(_wifiSSID, _wifiPassword);
+    Log::connecting("wifi", _wifiConnectionTry);
   }
   return false;
 }
@@ -129,7 +108,7 @@ void NetTask::setup() {
   IotWebConfWrapper::setup(ap);
 #  endif
 #  if STFMQTT == 1
-  MQTTConsumer::MQTTConsumerObj.setup();
+  MQTTConsumer::_obj.setup();
 #  endif
 }
 
@@ -146,7 +125,7 @@ uint32_t NetTask::loop() {
 #  endif
 #  if STFMQTT == 1
   if (connected) {
-    uint32_t toWaitMQTT = MQTTConsumer::MQTTConsumerObj.loop();
+    uint32_t toWaitMQTT = MQTTConsumer::_obj.loop();
     if (toWaitMQTT != 0 && toWaitMQTT < toWait) toWait = toWaitMQTT;
   }
 #  endif

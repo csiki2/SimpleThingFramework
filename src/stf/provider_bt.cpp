@@ -28,11 +28,18 @@
 
 namespace stf {
 
+DEFINE_PROVIDERTASK(BTProvider, 4, 0, 0);
+
+BTDeviceGroup BTProvider::_discoveryList;
+
+BTProvider::BTProvider() : Provider(g_bufferBTProvider) {
+}
+
 // Coefficients from android-beacon-library
-double beacon_distance(int rssi_, int txPower_) {
-  if (txPower_ >= 0)
-    txPower_ = -59;
-  double ratio = rssi_ * 1.0 / txPower_;
+double BTProvider::beaconDistance(int rssi, int txPower) {
+  if (txPower >= 0)
+    txPower = -59;
+  double ratio = rssi * 1.0 / txPower;
   double distance;
   if (ratio < 1.0) {
     distance = pow(ratio, 10);
@@ -42,26 +49,19 @@ double beacon_distance(int rssi_, int txPower_) {
   return distance;
 }
 
-DEFINE_PROVIDERTASK(BTProvider, 4, 0, 0);
+void BTProvider::generateBTBlocks(DataFeeder& feeder, const DataBlock& generatorBlock, DataCache& cache) {
+  feeder.nextToWrite(edf_id, edt_Raw, etirFormatHexUpper + etirSeparatorColon + 6).setRaw(cache._device.info.mac, cache._device.info.macLen);
 
-BTDeviceGroup BTProvider::_discoveryList;
-
-BTProvider::BTProvider() : Provider(g_bufferBTProvider) {
-}
-
-void generateBTBlocks(DataFeeder& feeder_, const DataBlock& generatorBlock_, DataCache& cache_) {
-  feeder_.nextToWrite(edf_id, edt_Raw, etirFormatHexUpper + etirSeparatorColon + 6).setRaw(cache_._device.info.mac, cache_._device.info.macLen);
-
-  int8_t txpw = (int8_t)generatorBlock_._extra;
-  int8_t rssi = (int8_t)generatorBlock_._typeInfo;
-  if (txpw != 127) feeder_.nextToWrite(edf_txpower, edt_32, 1).set32(txpw);
+  int8_t txpw = (int8_t)generatorBlock._extra;
+  int8_t rssi = (int8_t)generatorBlock._typeInfo;
+  if (txpw != 127) feeder.nextToWrite(edf_txpower, edt_32, 1).set32(txpw);
   if (rssi != 127) {
-    feeder_.nextToWrite(edf_rssi, edt_32, 1).set32(rssi);
-    feeder_.nextToWrite(edf_distance, edt_Float, 2).setFloat(beacon_distance(rssi, txpw));
+    feeder.nextToWrite(edf_rssi, edt_32, 1).set32(rssi);
+    feeder.nextToWrite(edf_distance, edt_Float, 2).setFloat(beaconDistance(rssi, txpw));
   }
 
-  uint32_t uuid32 = generatorBlock_._value.t32[1];
-  feeder_.nextToWrite(edf_servicedatauuid, edt_Hex32, etihPrefix + (uuid32 <= 0xffff ? 4 : 8)).set32(uuid32);
+  uint32_t uuid32 = generatorBlock._value.t32[1];
+  feeder.nextToWrite(edf_servicedatauuid, edt_Hex32, etihPrefix + (uuid32 <= 0xffff ? 4 : 8)).set32(uuid32);
 }
 
 class BTProviderDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
@@ -75,7 +75,7 @@ class BTProviderDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
     STFLED_COMMAND(STFLEDEVENT_BLE_RECEIVE);
 
     BTProvider::_discoveryList.updateDevices();
-    BTProviderObj._packetsScanned++;
+    g_BTProviderObj._packetsScanned++;
 
     // The NimBLE interface seems to like copy and alloc as much as possible...
     NimBLEAddress addr = ble_device_->getAddress();
@@ -117,7 +117,7 @@ class BTProviderDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
             int8_t txpw = ble_device_->haveTXPower() ? ble_device_->getTXPower() : 127;
             int rssiInt = ble_device_->haveRSSI() ? ble_device_->getRSSI() : 127;
             int8_t rssi = rssiInt < -128 ? -128 : (rssiInt > 127 ? 127 : (int8_t)rssiInt);
-            DataBlock& genBlock = g_bufferBTProvider->nextToWrite(edf__none, edt_Generator, rssi).setPtr((const void*)&generateBTBlocks);
+            DataBlock& genBlock = g_bufferBTProvider->nextToWrite(edf__none, edt_Generator, rssi).setPtr((const void*)&BTProvider::generateBTBlocks);
             genBlock._value.t32[1] = uuid32;
             genBlock._extra = txpw;
           }
@@ -133,7 +133,7 @@ class BTProviderDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
 
           int statFreeBlocksEnd = g_bufferBTProvider->getFreeBlocks();
           g_bufferBTProvider->closeMessage();
-          BTProviderObj._packetsForwarded++;
+          g_BTProviderObj._packetsForwarded++;
           STFLOG_INFO("Total blocks used for the BT messages: %u\n", statFreeBlocksBegin - statFreeBlocksEnd); // not correct, will need fix
         }
       }
@@ -157,7 +157,7 @@ class BTProviderDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
       Serial.printf("Address: %s UUID (%d) %s DATA (%d) %s\n", ble_device_->getAddress().toString().c_str(), bs, std::string(uuid).c_str(), str.length(), buffer);
     }
   }
-} BTCallback;
+} g_bleCallback;
 
 void BTProvider::setup() {
   if (NimBLEDevice::getInitialized()) return;
@@ -170,7 +170,7 @@ void BTProvider::setup() {
   scan->setInterval(97); // How often the scan occurs / switches channels; in milliseconds,
   scan->setWindow(30); // How long to scan during the interval; in milliseconds.
   scan->setMaxResults(0); // do not store the scan results, use callback only.
-  scan->setAdvertisedDeviceCallbacks(&BTCallback, false);
+  scan->setAdvertisedDeviceCallbacks(&g_bleCallback, false);
   _packetLastReset = 0;
   _packetsScanned = _packetsForwarded = 0;
 }
@@ -189,22 +189,22 @@ uint BTProvider::loop() {
   return 50;
 }
 
-const DiscoveryBlock BTReceived = {edf_bt_scanned, edcSensor, "BT Packets Scanned", "Hz", nullptr};
-const DiscoveryBlock BTTransmitted = {edf_bt_forwarded, edcSensor, "BT Packets Forwarded", "Hz", nullptr};
+const DiscoveryBlock BTProvider::_received = {edf_bt_scanned, edcSensor, "BT Packets Scanned", "Hz", nullptr};
+const DiscoveryBlock BTProvider::_transmitted = {edf_bt_forwarded, edcSensor, "BT Packets Forwarded", "Hz", nullptr};
+const DiscoveryBlock* BTProvider::_listSystem[] = {&_received, &_transmitted, nullptr};
 
-const DiscoveryBlock* BTProvider::_listSystem[] = {&BTReceived, &BTTransmitted, nullptr};
-uint BTProvider::systemDiscovery(DataBuffer* systemBuffer_) {
-  uint res = Discovery::addDiscoveryBlocks(systemBuffer_, etitSYS, _listSystem);
+uint BTProvider::systemDiscovery(DataBuffer* systemBuffer) {
+  uint res = Discovery::addDiscoveryBlocks(systemBuffer, etitSYS, _listSystem);
   return res;
 }
 
-uint BTProvider::systemUpdate(DataBuffer* systemBuffer_, uint32_t uptimeS_) {
-  if (systemBuffer_ == nullptr) return 2;
-  float ellapsed = uptimeS_ == _packetLastReset ? 0.1f : (uptimeS_ - _packetLastReset);
-  systemBuffer_->nextToWrite(edf_bt_scanned, edt_Float, 3).setFloat(_packetsScanned / ellapsed);
-  systemBuffer_->nextToWrite(edf_bt_forwarded, edt_Float, 3).setFloat(_packetsForwarded / ellapsed);
+uint BTProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS) {
+  if (systemBuffer == nullptr) return 2;
+  float ellapsed = uptimeS == _packetLastReset ? 0.1f : (uptimeS - _packetLastReset);
+  systemBuffer->nextToWrite(edf_bt_scanned, edt_Float, 3).setFloat(_packetsScanned / ellapsed);
+  systemBuffer->nextToWrite(edf_bt_forwarded, edt_Float, 3).setFloat(_packetsForwarded / ellapsed);
   _packetsScanned = _packetsForwarded = 0; // we have a very low chance to lose 1 packet from the statistics due to concurrency, that's ok
-  _packetLastReset = uptimeS_;
+  _packetLastReset = uptimeS;
   return 0;
 }
 

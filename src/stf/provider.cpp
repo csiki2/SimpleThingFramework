@@ -56,27 +56,19 @@ bool Provider::isConsumerReady() const {
   return cons != nullptr && cons->isReady();
 }
 
-uint Provider::systemDiscovery(DataBuffer* systemBuffer_) {
+uint Provider::systemDiscovery(DataBuffer* systemBuffer) {
   return 0;
 }
 
-uint Provider::systemUpdate(DataBuffer* systemBuffer_, uint32_t uptimeS_) {
+uint Provider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS) {
   return 0;
 }
 
-void Provider::feedback(const FeedbackInfo& info_) {
+void Provider::feedback(const FeedbackInfo& info) {
 }
 
-void setupProviderTask(void* ptr_) {
-  ((Provider*)ptr_)->setup();
-}
-
-uint loopProviderTask(void* ptr_) {
-  return ((Provider*)ptr_)->loop();
-}
-
-Consumer::Consumer() : bufferHead(nullptr) {
-  messageCreated = messageSent = 0;
+Consumer::Consumer() : _bufferHead(nullptr) {
+  _messageCreated = _messageSent = 0;
 }
 
 uint32_t Consumer::readyTime() {
@@ -84,78 +76,78 @@ uint32_t Consumer::readyTime() {
 }
 
 void Consumer::addBuffer(DataBuffer* buffer) {
-  buffer->_consumerBufferNext = bufferHead;
+  buffer->_consumerBufferNext = _bufferHead;
   buffer->_parentConsumer = this;
-  bufferHead = buffer;
+  _bufferHead = buffer;
 }
 
 DataBuffer* Consumer::getNextBuffer(DataBuffer* buffer) {
   return buffer != nullptr ? buffer->_consumerBufferNext : nullptr;
 }
 
-bool Consumer::send(JsonBuffer& jsonBuffer_) {
+bool Consumer::send(JsonBuffer& jsonBuffer) {
   return false;
 }
 
-bool Consumer::onCloseMessageEvent(JsonBuffer& jsonBuffer_, DataCache& cache_) {
-  jsonBuffer_.finish();
-  messageCreated++;
+bool Consumer::onCloseMessageEvent(JsonBuffer& jsonBuffer, DataCache& cache) {
+  jsonBuffer.finish();
+  _messageCreated++;
   bool res = false;
-  if (jsonBuffer_.isValid()) {
+  if (jsonBuffer.isValid()) {
     // res = false;
-    res = send(jsonBuffer_);
-    if (res) messageSent++;
-    STFLOG_INFO("Sending MQTT message (%s) %s.\n", jsonBuffer_.buffer + jsonBuffer_.jsonSize, res ? "succeeded" : "failed");
+    res = send(jsonBuffer);
+    if (res) _messageSent++;
+    STFLOG_INFO("Sending MQTT message (%s) %s.\n", jsonBuffer._buffer + jsonBuffer._jsonSize, res ? "succeeded" : "failed");
   } else {
     STFLOG_INFO("Invalid MQTT message.\n");
   }
-  jsonBuffer_.start();
-  cache_.reset();
+  jsonBuffer.start();
+  cache.reset();
   return res;
 }
 
-void Consumer::consumeBuffers(JsonBuffer& jsonBuffer_) {
-  for (DataBuffer* buffer = bufferHead; buffer != nullptr; buffer = getNextBuffer(buffer)) {
-    consumeBuffer(jsonBuffer_, buffer);
+void Consumer::consumeBuffers(JsonBuffer& jsonBuffer) {
+  for (DataBuffer* buffer = _bufferHead; buffer != nullptr; buffer = getNextBuffer(buffer)) {
+    consumeBuffer(jsonBuffer, buffer);
   }
 }
 
-int Consumer::consumeBuffer(JsonBuffer& jsonBuffer_, DataBuffer* buffer) {
-  messageSent = messageCreated = 0;
+int Consumer::consumeBuffer(JsonBuffer& jsonBuffer, DataBuffer* buffer) {
+  _messageSent = _messageCreated = 0;
   if (!buffer->hasClosedMessage()) return 0;
 
   DataCache cache;
-  jsonBuffer_.start();
+  jsonBuffer.start();
   cache.forceReset();
   do {
     bool end = false;
     while (!end) {
       DataBlock& block = buffer->getReadBlock();
       if (block._type == edt_Generator) {
-        DataFeeder feeder(*this, jsonBuffer_);
+        DataFeeder feeder(*this, jsonBuffer);
         feeder.consumeGeneratorBlock(block, cache);
       } else {
-        jsonBuffer_.addDataBlock(block, cache);
-        if (block.isClosedMessage()) onCloseMessageEvent(jsonBuffer_, cache);
+        jsonBuffer.addDataBlock(block, cache);
+        if (block.isClosedMessage()) onCloseMessageEvent(jsonBuffer, cache);
       }
       end = block.isClosedMessage();
       buffer->IncrementReadIndex();
     }
   } while (buffer->hasClosedMessage());
-  return messageSent;
+  return _messageSent;
 }
 
-void Consumer::broadcastFeedback(const FeedbackInfo& info_) {
-  for (DataBuffer* buffer = bufferHead; buffer != nullptr; buffer = buffer->_consumerBufferNext) {
+void Consumer::broadcastFeedback(const FeedbackInfo& info) {
+  for (DataBuffer* buffer = _bufferHead; buffer != nullptr; buffer = buffer->_consumerBufferNext) {
     for (Provider* provider = Provider::getNext(nullptr, buffer); provider != nullptr; provider = Provider::getNext(provider, buffer))
-      provider->feedback(info_);
+      provider->feedback(info);
   }
 }
 
-void FeedbackInfo::set(const char* topic_, const uint8_t* payload_, unsigned int length_) {
-  topic = topic_;
-  payload = payload_;
-  payloadLength = length_;
+void FeedbackInfo::set(const char* topicInput, const uint8_t* payloadInput, unsigned int payloadLengthInput) {
+  topic = topicInput;
+  payload = payloadInput;
+  payloadLength = payloadLengthInput;
 
   const char *fndB, *fndE;
 

@@ -23,18 +23,15 @@
 #  include <stf/data_block.h>
 #  include <stf/provider.h>
 #  include <stf/util.h>
-
-#  include <WiFi.h>
 #  include <stdlib.h>
 
 namespace stf {
 
-WiFiClient eClient;
-MQTTConsumer MQTTConsumer::MQTTConsumerObj;
+MQTTConsumer MQTTConsumer::_obj;
 
-MQTTConsumer::MQTTConsumer() : client(eClient) {
-  connectionTime = 0;
-  connectionTry = 0;
+MQTTConsumer::MQTTConsumer() : _client(_wifiClient) {
+  _connectionTime = 0;
+  _connectionTry = 0;
 }
 
 void MQTTConsumer::callback(char* topic, byte* payload, unsigned int length) {
@@ -46,45 +43,45 @@ void MQTTConsumer::callback(char* topic, byte* payload, unsigned int length) {
               info.fieldStr,
               info.topicEnum, info.fieldEnum,
               length, length, payload);
-  MQTTConsumerObj.broadcastFeedback(info);
+  _obj.broadcastFeedback(info);
 }
 
 void MQTTConsumer::setup() {
-  int port = strtol(mqttPort, nullptr, 10);
-  STFLOG_INFO("MQTT Server - %s:%d\n", mqttServer, port);
-  client.setServer(mqttServer, (uint16_t)port);
-  client.setBufferSize(STFMQTT_JSONBUFFER_SIZE);
-  client.setCallback(callback);
+  int port = strtol(NetTask::_mqttPort, nullptr, 10);
+  STFLOG_INFO("MQTT Server - %s:%d\n", NetTask::_mqttServer, port);
+  _client.setServer(NetTask::_mqttServer, (uint16_t)port);
+  _client.setBufferSize(STFMQTT_JSONBUFFER_SIZE);
+  _client.setCallback(callback);
 
 #  undef STF_BUFFER_DECLARE
-#  define STF_BUFFER_DECLARE(name, size, task) MQTTConsumerObj.addBuffer(&g_##name);
+#  define STF_BUFFER_DECLARE(name, size, task) _obj.addBuffer(&g_##name);
 #  undef STF_BUFFER_PROVIDER
 #  define STF_BUFFER_PROVIDER(name, provider)
   STFBUFFERS;
 }
 
 uint32_t MQTTConsumer::loop() {
-  if (client.connected()) {
+  if (_client.connected()) {
     STFLED_COMMAND(STFLEDEVENT_MQTT_CONNECTED);
-    consumeBuffers(jsonBuffer);
-    client.loop();
+    consumeBuffers(_jsonBuffer);
+    _client.loop();
     return 10;
   }
   STFLED_COMMAND(STFLEDEVENT_MQTT_NOT_CONNECTED);
   if (WiFi.isConnected()) {
     uint64_t uptime = Host::uptimeMS64();
-    if (uptime - connectionTime > 5000 || connectionTry == 0) {
-      connectionTry++;
-      connectionTime = uptime;
-      Log::connecting("MQTT server", connectionTry);
-      if (client.connect(Host::_name, mqttUser, mqttPassword)) {
+    if (uptime - _connectionTime > 5000 || _connectionTry == 0) {
+      _connectionTry++;
+      _connectionTime = uptime;
+      Log::connecting("MQTT server", _connectionTry);
+      if (_client.connect(Host::_name, NetTask::_mqttUser, NetTask::_mqttPassword)) {
         Log::connected("MQTT server");
-        connectionTry = 0;
-        connectionTime = Host::uptimeSec32();
+        _connectionTry = 0;
+        _connectionTime = Host::uptimeSec32();
         char subscribeStr[32 + strlen(Host::_name) + strlen(Host::_info.strId)];
         sprintf(subscribeStr, "home/%s/+/%s/command/#", Host::_name, Host::_info.strId);
         STFLOG_INFO("MQTT subscribe to %s\n", subscribeStr);
-        client.subscribe(subscribeStr);
+        _client.subscribe(subscribeStr);
         return 10;
       } else {
         STFLOG_INFO("Unable to connect to the MQTT Server.\n");
@@ -94,12 +91,12 @@ uint32_t MQTTConsumer::loop() {
   return 0;
 }
 
-bool MQTTConsumer::isReady() { return client.connected(); }
-uint32_t MQTTConsumer::readyTime() { return connectionTime; }
+bool MQTTConsumer::isReady() { return _client.connected(); }
+uint32_t MQTTConsumer::readyTime() { return _connectionTime; }
 
 bool MQTTConsumer::send(JsonBuffer& jsonBuffer_) {
   //return false;
-  return client.publish(jsonBuffer_.buffer + jsonBuffer_.jsonSize, jsonBuffer_.buffer, jsonBuffer_.pos);
+  return _client.publish(jsonBuffer_._buffer + jsonBuffer_._jsonSize, jsonBuffer_._buffer, jsonBuffer_._pos);
 }
 
 } // namespace stf

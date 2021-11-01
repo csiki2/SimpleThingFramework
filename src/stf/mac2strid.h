@@ -22,8 +22,33 @@
 
 namespace stf {
 
-void mac_to_strid(char* id_, const uint8_t mac_[8], uint macLen_ = 6);
-void mac_to_macid(char* id_, const uint8_t mac_[8], uint macLen_ = 6);
-void mac_to_strid_integrity_check();
+class Mac {
+public:
+  static void toStrId(char* id, const uint8_t mac[8], uint macLen = 6);
+  static void toMacId(char* id, const uint8_t mac[8], uint macLen = 6);
+  static void integrityCheck();
+
+protected:
+  struct MacMap {
+    const char* name;
+    const uint8_t* mac4;
+    uint8_t subIdLen;
+  };
+
+  static uint32_t hash4(const uint8_t* mac4);
+  static void hash4Str(char* buffer, uint len, const uint8_t* mac4);
+
+  static inline bool cmp4(const uint8_t* mac4, const uint8_t* mac6) {
+    if (mac4[0] != mac6[0] || mac4[1] != mac6[1] || mac4[2] != mac6[2]) return false;
+    if ((mac4[3] & 0x04) != 0 && (mac4[3] & 0xf0) != (mac6[3] & 0xf0)) return false;
+    return true;
+  }
+
+  static const MacMap _vendorList[];
+
+  static const uint8_t _macEsp[];
+  static const uint8_t _macQing[];
+  static const uint8_t _macTelink[];
+};
 
 } // namespace stf

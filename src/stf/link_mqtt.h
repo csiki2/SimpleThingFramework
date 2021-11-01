@@ -25,13 +25,14 @@
 #  include <stf/json_buffer.h>
 #  include <stf/provider.h>
 
+#  include <WiFi.h>
 #  include <PubSubClient.h>
 
 namespace stf {
 
 class MQTTConsumer : public Consumer {
 public:
-  static MQTTConsumer MQTTConsumerObj;
+  static MQTTConsumer _obj;
 
   void setup();
   uint32_t loop();
@@ -41,14 +42,16 @@ public:
 
 protected:
   MQTTConsumer();
-  bool send(JsonBuffer& jsonBuffer_) override;
+  bool send(JsonBuffer& jsonBuffer) override;
 
   static void callback(char* topic, byte* payload, unsigned int length);
 
-  StaticJsonBuffer<STFMQTT_JSONBUFFER_SIZE> jsonBuffer;
-  uint32_t connectionTime;
-  uint connectionTry;
-  PubSubClient client;
+  StaticJsonBuffer<STFMQTT_JSONBUFFER_SIZE> _jsonBuffer;
+  uint32_t _connectionTime;
+  uint _connectionTry;
+
+  WiFiClient _wifiClient;
+  PubSubClient _client;
 };
 
 } // namespace stf

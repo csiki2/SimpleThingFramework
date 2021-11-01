@@ -20,23 +20,13 @@
 
 namespace stf {
 
-struct macMap {
-  const char* name;
-  const uint8_t* mac4;
-  uint8_t subIdLen;
+const Mac::MacMap Mac::_vendorList[] = {
+    {"Esp", _macEsp, 2},
+    {"Qing", _macQing, 1},
+    {"Tlnk", _macTelink, 1},
 };
 
-extern const uint8_t esp_mac[];
-const uint8_t qing_mac[] = {0x4C, 0x65, 0xA8, 0xD4, 0x58, 0x2D, 0x34, 0x00, 0xFF};
-extern const uint8_t telink_mac[];
-
-const macMap vendorList[] = {
-    {"Esp", esp_mac, 2},
-    {"Qing", qing_mac, 1},
-    {"Tlnk", telink_mac, 1},
-};
-
-uint32_t mac4_hash(const uint8_t* mac4) {
+uint32_t Mac::hash4(const uint8_t* mac4) {
   // while (c = *str++) hash = ((hash << 5) + hash) + c;              /* hash * 33    + c */ -> 2 collosions at Esp
   // while (c = *str++) hash = c + (hash << 6) + (hash << 16) - hash; /* hash * 65599 + c */ -> 3 collosions at Esp
   uint32_t hash = mac4[0];
@@ -49,8 +39,8 @@ uint32_t mac4_hash(const uint8_t* mac4) {
   return hash;
 }
 
-void mac4_hash_str(char* buffer, uint len, const uint8_t* mac4) {
-  uint32_t hash = mac4_hash(mac4);
+void Mac::hash4Str(char* buffer, uint len, const uint8_t* mac4) {
+  uint32_t hash = hash4(mac4);
   for (int idx = 0; idx < len; idx++) {
     buffer[idx] = 'A' + (hash % 26);
     hash /= 26;
@@ -58,41 +48,35 @@ void mac4_hash_str(char* buffer, uint len, const uint8_t* mac4) {
   buffer[len] = 0;
 }
 
-inline bool macCmp(const uint8_t* mac4_, const uint8_t* mac6_) {
-  if (mac4_[0] != mac6_[0] || mac4_[1] != mac6_[1] || mac4_[2] != mac6_[2]) return false;
-  if ((mac4_[3] & 0x04) != 0 && (mac4_[3] & 0xf0) != (mac6_[3] & 0xf0)) return false;
-  return true;
-}
-
-void mac_to_strid(char* id_, const uint8_t mac_[8], uint macLen_) {
-  const macMap* vendor = nullptr;
+void Mac::toStrId(char* id, const uint8_t mac[8], uint macLen) {
+  const MacMap* vendor = nullptr;
   const uint8_t* mac4 = nullptr;
-  for (int idx = 0, len = sizeof(vendorList) / sizeof(macMap); idx < len; idx++) {
-    vendor = vendorList + idx;
+  for (int idx = 0, len = sizeof(_vendorList) / sizeof(MacMap); idx < len; idx++) {
+    vendor = _vendorList + idx;
     mac4 = vendor->mac4;
-    while (mac4[0] != 0xff && !macCmp(mac4, mac_)) mac4 += 4;
+    while (mac4[0] != 0xff && !cmp4(mac4, mac)) mac4 += 4;
     if (mac4[0] != 0xff) break; // found it
   }
   int idx = 0, pos = 0;
   if (mac4[0] != 0xff) {
     char vendorHash[vendor->subIdLen + 1];
-    mac4_hash_str(vendorHash, vendor->subIdLen, mac4);
-    pos = sprintf(id_, "%s%s_", vendor->name, vendorHash);
+    hash4Str(vendorHash, vendor->subIdLen, mac4);
+    pos = sprintf(id, "%s%s_", vendor->name, vendorHash);
     idx = 3;
   }
-  for (; idx < macLen_; idx++) pos += sprintf(id_ + pos, "%02X", mac_[idx]);
+  for (; idx < macLen; idx++) pos += sprintf(id + pos, "%02X", mac[idx]);
 }
 
-void mac_to_macid(char* id_, const uint8_t mac_[8], uint macLen_) {
-  for (int idx = 0, pos = 0; idx < macLen_; idx++) pos += sprintf(id_ + pos, "%02X", mac_[idx]);
+void Mac::toMacId(char* id, const uint8_t mac[8], uint macLen) {
+  for (int idx = 0, pos = 0; idx < macLen; idx++) pos += sprintf(id + pos, "%02X", mac[idx]);
 }
 
-void mac_to_strid_integrity_check() {
+void Mac::integrityCheck() {
   STFLOG_INFO("Starting integrity check for mac_to_strid\n");
 
   uint coll = 0;
-  for (int idx = 0, len = sizeof(vendorList) / sizeof(macMap); idx < len; idx++) {
-    const macMap* vendor = vendorList + idx;
+  for (int idx = 0, len = sizeof(_vendorList) / sizeof(MacMap); idx < len; idx++) {
+    const MacMap* vendor = _vendorList + idx;
     const uint8_t* mac4 = vendor->mac4;
     char vendorHash1[vendor->subIdLen + 1];
     char vendorHash2[vendor->subIdLen + 1];
@@ -100,9 +84,9 @@ void mac_to_strid_integrity_check() {
     while (mac4[4 * mlen] != 0xff) mlen++;
     STFLOG_INFO("Checking %s with %u element(s).\n", vendor->name, mlen);
     for (uint j = 0; j < mlen - 1; j++) {
-      mac4_hash_str(vendorHash1, vendor->subIdLen, &mac4[j * 4]);
+      hash4Str(vendorHash1, vendor->subIdLen, &mac4[j * 4]);
       for (uint k = j + 1; k < mlen; k++) {
-        mac4_hash_str(vendorHash2, vendor->subIdLen, &mac4[k * 4]);
+        hash4Str(vendorHash2, vendor->subIdLen, &mac4[k * 4]);
         if (strcmp(vendorHash1, vendorHash2) == 0) {
           STFLOG_INFO("Collosion at %02X%02X%02X vs %02X%02X%02X -> %s\n", mac4[j * 4], mac4[j * 4 + 1], mac4[j * 4 + 2], mac4[k * 4], mac4[k * 4 + 1], mac4[k * 4 + 2], vendorHash1);
           coll++;
@@ -113,10 +97,12 @@ void mac_to_strid_integrity_check() {
   STFLOG_INFO("Integrity check for mac_to_strid finished with %u collosions.\n", coll);
 }
 
+const uint8_t Mac::_macQing[] = {0x4C, 0x65, 0xA8, 0xD4, 0x58, 0x2D, 0x34, 0x00, 0xFF};
+
 /* clang-format off */
 //[01:22:38]Collosion at 9097D5 vs C4DD57 -> QW
 //[01:22:38]Collosion at A4CF12 vs F008D1 -> NU
-const uint8_t esp_mac[] = {
+const uint8_t Mac::_macEsp[] = {
   0x08, 0x3A, 0xF2, 0x00,
   0x0C, 0xDC, 0x7E, 0x00,
   0x10, 0x52, 0x1C, 0x00,
@@ -201,7 +187,8 @@ const uint8_t esp_mac[] = {
   0xFC, 0xF5, 0xC4, 0x00,
   0xFF,
 };
-const uint8_t telink_mac[] = {
+
+const uint8_t Mac::_macTelink[] = {
   0x40, 0x62, 0x34, 0x00,
   0x70, 0xB3, 0xD5, 0x04,  // 70:B3:D5:05:80:00/36 is not supported
   0xA4, 0xC1, 0x38, 0x00,

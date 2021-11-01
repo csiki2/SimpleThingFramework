@@ -25,143 +25,143 @@
 namespace stf {
 
 void JsonBuffer::logContent() {
-  STFLOG_INFO("JsonBuffer topic: %s\n", jsonSize == totalSize ? "no_topic" : buffer + jsonSize);
-  STFLOG_INFO("JsonBuffer result: %s\n", buffer);
+  STFLOG_INFO("JsonBuffer topic: %s\n", _jsonSize == _totalSize ? "no_topic" : _buffer + _jsonSize);
+  STFLOG_INFO("JsonBuffer result: %s\n", _buffer);
 }
 
 void JsonBuffer::start() {
-  failCounter = 0;
-  pos = 0;
-  jsonSize = totalSize;
+  _failCounter = 0;
+  _pos = 0;
+  _jsonSize = _totalSize;
   addChar('{');
 }
 
 void JsonBuffer::finish() {
   addChar('}');
-  if (pos < jsonSize) buffer[pos] = 0;
+  if (_pos < _jsonSize) _buffer[_pos] = 0;
   logContent();
-  if (failCounter > 0) STFLOG_WARNING("JsonBuffer Failed to resolve all the data blocks (%u)\n", failCounter);
+  if (_failCounter > 0) STFLOG_WARNING("JsonBuffer Failed to resolve all the data blocks (%u)\n", _failCounter);
 }
 
 void JsonBuffer::setElementFailed() {
-  pos = elementPos;
-  elementFailed = true;
-  failCounter++;
+  _pos = _elementPos;
+  _elementFailed = true;
+  _failCounter++;
 }
 
-void JsonBuffer::startElement(const DataBlock& block, DataCache& cache_) {
-  elementPos = pos;
-  elementName = DataField::_list[block._field];
-  elementFailed = false;
+void JsonBuffer::startElement(const DataBlock& block, DataCache& cache) {
+  _elementPos = _pos;
+  _elementName = DataField::_list[block._field];
+  _elementFailed = false;
   if (block._field == edf__cont) return;
 
-  int avail = jsonSize - pos;
-  char prevChar = pos > 0 ? buffer[pos - 1] : '{'; // pos always should be >0
-  int res = snprintf(buffer + pos, avail, "%s\"%s\":", prevChar == '{' || prevChar == '[' ? "" : ",", elementName);
+  int avail = _jsonSize - _pos;
+  char prevChar = _pos > 0 ? _buffer[_pos - 1] : '{'; // pos always should be >0
+  int res = snprintf(_buffer + _pos, avail, "%s\"%s\":", prevChar == '{' || prevChar == '[' ? "" : ",", _elementName);
   if (res < 0 || res >= avail)
     setElementFailed();
   else
-    pos += res;
+    _pos += res;
 }
 
-void JsonBuffer::addDataBlock(const DataBlock& block_, DataCache& cache_) {
-  DataType type = DataType::_list[block_._type];
-  if ((type._support & etSupportSaveToCache) != 0) cache_.addBlock(block_, block_._extra);
+void JsonBuffer::addDataBlock(const DataBlock& block, DataCache& cache) {
+  DataType type = DataType::_list[block._type];
+  if ((type._support & etSupportSaveToCache) != 0) cache.addBlock(block, block._extra);
 
   if (type._coreType == ectNone) {
-    blockToStr(nullptr, 0, block_, cache_);
+    blockToStr(nullptr, 0, block, cache);
     return;
   }
-  if (block_._field == edf__topic) {
-    int len = blockToStr(buffer + jsonSize, 0, block_, cache_);
-    if (len >= 0 && pos + len + 1 < jsonSize) {
-      jsonSize -= len + 1;
-      blockToStr(buffer + jsonSize, len + 1, block_, cache_);
+  if (block._field == edf__topic) {
+    int len = blockToStr(_buffer + _jsonSize, 0, block, cache);
+    if (len >= 0 && _pos + len + 1 < _jsonSize) {
+      _jsonSize -= len + 1;
+      blockToStr(_buffer + _jsonSize, len + 1, block, cache);
     } else {
-      elementFailed = true;
-      jsonSize = totalSize;
-      failCounter++;
+      _elementFailed = true;
+      _jsonSize = _totalSize;
+      _failCounter++;
     }
     return;
   }
 
-  if (cache_._headElem._field == edf__none) startElement(block_, cache_);
-  if (!elementFailed) {
-    int idx = blockToStr(buffer + pos, jsonSize - pos, block_, cache_);
-    if (idx >= 0 && idx < jsonSize - pos)
-      pos += idx;
+  if (cache._headElem._field == edf__none) startElement(block, cache);
+  if (!_elementFailed) {
+    int idx = blockToStr(_buffer + _pos, _jsonSize - _pos, block, cache);
+    if (idx >= 0 && idx < _jsonSize - _pos)
+      _pos += idx;
     else
       setElementFailed();
   }
-  if ((type._support & etSupportDoubleField) == 0 || (block_._typeInfo & etiDoubleField) == 0) return;
+  if ((type._support & etSupportDoubleField) == 0 || (block._typeInfo & etiDoubleField) == 0) return;
   // Let's go for one more round :)
-  DataBlock block = block_;
-  block._field = (EnumDataField)block._extra;
-  block._value.t32[0] = block._value.t32[1];
-  if (cache_._headElem._field == edf__none) startElement(block, cache_);
-  if (!elementFailed) {
-    int idx = blockToStr(buffer + pos, jsonSize - pos, block, cache_);
-    if (idx >= 0 && idx < jsonSize - pos)
-      pos += idx;
+  DataBlock block2 = block;
+  block2._field = (EnumDataField)block._extra;
+  block2._value.t32[0] = block2._value.t32[1];
+  if (cache._headElem._field == edf__none) startElement(block2, cache);
+  if (!_elementFailed) {
+    int idx = blockToStr(_buffer + _pos, _jsonSize - _pos, block2, cache);
+    if (idx >= 0 && idx < _jsonSize - _pos)
+      _pos += idx;
     else
       setElementFailed();
   }
 }
 
-// buffer_ is not allowed to be nullptr, buffer_[-1] must be valid
-int JsonBuffer::blockToStr(char* buffer_, uint len_, const DataBlock& block_, DataCache& cache_) {
-  const DataType& type_ = DataType::_list[block_._type];
-  if (type_._coreType == ectNone) { // Just call it...
-    type_._toStr(nullptr, 0, block_, cache_);
+// buffer is not allowed to be nullptr, buffer[-1] must be valid
+int JsonBuffer::blockToStr(char* buffer, uint len, const DataBlock& block, DataCache& cache) {
+  const DataType& type = DataType::_list[block._type];
+  if (type._coreType == ectNone) { // Just call it...
+    type._toStr(nullptr, 0, block, cache);
     return 0;
   }
-  if (block_._field == edf__none) return 0;
+  if (block._field == edf__none) return 0;
 
-  bool startElem = cache_._headElem._field == edf__none;
-  bool complexElem = !startElem || (type_._coreType == ectArray || type_._coreType == ectObject);
-  bool continueElem = block_._field == edf__cont;
+  bool startElem = cache._headElem._field == edf__none;
+  bool complexElem = !startElem || (type._coreType == ectArray || type._coreType == ectObject);
+  bool continueElem = block._field == edf__cont;
 
   uint tlen = 0, clen = 0;
-  char oc = openChars[type_._coreType];
+  char oc = _openChars[type._coreType];
   if (complexElem) {
     if (startElem) {
-      cache_.setHeadElem(block_);
-      if (tlen < len_) buffer_[tlen] = oc;
+      cache.setHeadElem(block);
+      if (tlen < len) buffer[tlen] = oc;
       tlen++;
-    } else if (block_._field != edf__topic) {
-      char prevChar = buffer_[-1]; // safe since we continue the previous block
+    } else if (block._field != edf__topic) {
+      char prevChar = buffer[-1]; // safe since we continue the previous block
       if (prevChar != '[' && prevChar != '{') {
-        if (tlen < len_) buffer_[tlen] = ',';
+        if (tlen < len) buffer[tlen] = ',';
         tlen++;
       }
     }
   }
 
-  bool qm = type_._coreType == ectString || (type_._coreType == ectTopic && block_._field != edf__topic);
+  bool qm = type._coreType == ectString || (type._coreType == ectTopic && block._field != edf__topic);
   if (continueElem) {
-    if (buffer_[-1] == '\"') {
+    if (buffer[-1] == '\"') {
       clen = 1;
-      if (len_ > 0) { // if we are not in measure mode, we can write one plus char
-        buffer_--;
-        len_++;
+      if (len > 0) { // if we are not in measure mode, we can write one plus char
+        buffer--;
+        len++;
       }
     }
   } else if (qm) {
-    if (tlen < len_) buffer_[tlen] = '\"';
+    if (tlen < len) buffer[tlen] = '\"';
     tlen++;
   }
 
-  int len = type_._toStr(buffer_ + tlen, tlen < len_ ? len_ : 0, block_, cache_);
-  if (len < 0) return len;
-  tlen += len;
+  int res = type._toStr(buffer + tlen, tlen < len ? len : 0, block, cache);
+  if (res < 0) return res;
+  tlen += res;
   if (qm) {
-    if (tlen < len_) buffer_[tlen] = '\"';
+    if (tlen < len) buffer[tlen] = '\"';
     tlen++;
   }
   if (len == 0 && !qm && !startElem && tlen == 1) tlen = 0; // there was no data, remove the semicolon
-  if (complexElem && block_._closeComplexFlag) {
-    cache_._headElem._field = edf__none;
-    if (tlen < len_) buffer_[tlen] = closeChars[type_._coreType];
+  if (complexElem && block._closeComplexFlag) {
+    cache._headElem._field = edf__none;
+    if (tlen < len) buffer[tlen] = _closeChars[type._coreType];
     tlen++;
   }
   return tlen - clen;
@@ -178,8 +178,8 @@ enum EnumCoreType {
 };
 */
 
-const char JsonBuffer::openChars[] = {' ', ' ', ' ', '\"', '[', '{'};
-const char JsonBuffer::closeChars[] = {' ', ' ', ' ', '\"', ']', '}'};
+const char JsonBuffer::_openChars[] = {' ', ' ', ' ', '\"', '[', '{'};
+const char JsonBuffer::_closeChars[] = {' ', ' ', ' ', '\"', ']', '}'};
 
 } // namespace stf
 

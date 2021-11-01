@@ -23,6 +23,7 @@
 #ifdef STFTASK_OTA
 
 #  include <stf/provider.h>
+#  include <ArduinoOTA.h>
 
 #  ifndef STFOTA_PORT
 #    define STFOTA_PORT 3232
@@ -30,18 +31,28 @@
 
 namespace stf {
 
+class DiscoveryBlock;
+
 class OTAProvider : public Provider {
 public:
   OTAProvider();
 
   uint loop() override;
   void setup() override;
-  uint systemDiscovery(DataBuffer* systemBuffer_) override;
-  uint systemUpdate(DataBuffer* systemBuffer_, uint32_t uptimeS_) override;
-  void feedback(const FeedbackInfo& info_) override;
+  uint systemDiscovery(DataBuffer* systemBuffer) override;
+  uint systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS) override;
+  void feedback(const FeedbackInfo& info) override;
 
 protected:
+  static void onStart();
+  static void onEnd();
+  static void onProgress(unsigned progress, unsigned total);
+  static void onError(ota_error_t error);
+
   bool enabled;
+
+  static const DiscoveryBlock _switch;
+  static const DiscoveryBlock* _listSystem[];
 };
 
 } // namespace stf

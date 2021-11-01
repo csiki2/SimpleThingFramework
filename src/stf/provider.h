@@ -26,7 +26,7 @@ namespace stf {
 class JsonBuffer;
 
 struct FeedbackInfo {
-  void set(const char* topic_, const uint8_t* payload_, unsigned int length_);
+  void set(const char* topic, const uint8_t* payload, unsigned int length);
 
   const char* topic;
   const uint8_t* payload;
@@ -58,9 +58,9 @@ public:
 
   virtual void setup();
   virtual uint loop() = 0;
-  virtual uint systemDiscovery(DataBuffer* systemBuffer_);
-  virtual uint systemUpdate(DataBuffer* systemBuffer_, uint32_t uptimeS_);
-  virtual void feedback(const FeedbackInfo& info_);
+  virtual uint systemDiscovery(DataBuffer* systemBuffer);
+  virtual uint systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS);
+  virtual void feedback(const FeedbackInfo& info);
 
   bool isConsumerReady() const;
 
@@ -76,7 +76,7 @@ protected:
   friend class SystemProvider;
 };
 
-#define DEFINE_PROVIDERTASK(name, order, core, stackSize) name name##Obj;
+#define DEFINE_PROVIDERTASK(name, order, core, stackSize) name g_##name##Obj;
 
 // A consumer can read one or more buffer
 class Consumer {
@@ -89,18 +89,18 @@ public:
   void addBuffer(DataBuffer* buffer);
   DataBuffer* getNextBuffer(DataBuffer* buffer);
 
-  virtual bool onCloseMessageEvent(JsonBuffer& jsonBuffer_, DataCache& cache_);
+  virtual bool onCloseMessageEvent(JsonBuffer& jsonBuffer, DataCache& cache);
 
 protected:
-  virtual void consumeBuffers(JsonBuffer& jsonBuffer_);
-  int consumeBuffer(JsonBuffer& jsonBuffer_, DataBuffer* buffer_);
-  virtual bool send(JsonBuffer& jsonBuffer_);
+  virtual void consumeBuffers(JsonBuffer& jsonBuffer);
+  int consumeBuffer(JsonBuffer& jsonBuffer, DataBuffer* buffer);
+  virtual bool send(JsonBuffer& jsonBuffer);
 
-  void broadcastFeedback(const FeedbackInfo& info_);
+  void broadcastFeedback(const FeedbackInfo& info);
 
-  DataBuffer* bufferHead;
-  uint messageCreated;
-  uint messageSent;
+  DataBuffer* _bufferHead;
+  uint _messageCreated;
+  uint _messageSent;
 };
 
 } // namespace stf

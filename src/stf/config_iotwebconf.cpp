@@ -76,12 +76,12 @@ bool IotWebConfWrapper::init() {
 
   const char* mode;
   if (_apObject == nullptr) {
-    if (!_webConf.loadConfig() && wifiSSID[0] == 0) return false;
+    if (!_webConf.loadConfig() && NetTask::_wifiSSID[0] == 0) return false;
     iotwebconf::WifiAuthInfo wifiAuthInfo = _webConf.getWifiAuthInfo();
     Host::_name = _webConf.getThingName();
     Host::_password = _webConf.getApPasswordParameter()->valueBuffer;
-    wifiSSID = wifiAuthInfo.ssid;
-    wifiPassword = wifiAuthInfo.password;
+    NetTask::_wifiSSID = wifiAuthInfo.ssid;
+    NetTask::_wifiPassword = wifiAuthInfo.password;
     mode = "load config";
   } else {
     _apObject->webServer.on("/", [] { _obj->handleAPRoot(); });
@@ -92,10 +92,10 @@ bool IotWebConfWrapper::init() {
     mode = "access point";
   }
 #  if STFMQTT == 1
-  stf::mqttServer = IotWebConfWrapper::_mqttServer;
-  stf::mqttPort = IotWebConfWrapper::_mqttPort;
-  stf::mqttUser = IotWebConfWrapper::_mqttUser;
-  stf::mqttPassword = IotWebConfWrapper::_mqttPassword;
+  NetTask::_mqttServer = IotWebConfWrapper::_mqttServer;
+  NetTask::_mqttPort = IotWebConfWrapper::_mqttPort;
+  NetTask::_mqttUser = IotWebConfWrapper::_mqttUser;
+  NetTask::_mqttPassword = IotWebConfWrapper::_mqttPassword;
 #  endif
   STFLOG_INFO("IotWebConf init %s mode, ", mode);
   Log::memoryUsage(STFLOG_LEVEL_INFO);

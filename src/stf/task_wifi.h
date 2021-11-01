@@ -66,14 +66,37 @@
 
 namespace stf {
 #if STFTASK_WIFI == 1
-extern const char* wifiSSID;
-extern const char* wifiPassword;
-#endif
-#if STFMQTT == 1
-extern const char* mqttServer;
-extern const char* mqttPort;
-extern const char* mqttUser;
-extern const char* mqttPassword;
+
+class NetTask : public Task<NetTask> {
+public:
+  virtual void setup() override;
+  virtual uint loop() override;
+
+  bool checkConnection();
+
+  uint64_t _wifiConnectionTime = 0;
+  uint _wifiConnectionTry = 0;
+
+  static const char* _wifiSSID;
+  static const char* _wifiPassword;
+
+#  if STFMQTT == 1
+  static const char* _mqttServer;
+  static const char* _mqttPort;
+  static const char* _mqttUser;
+  static const char* _mqttPassword;
+#  endif
+#  if STFWIFI_IOTWEBCONF == 1
+  int8_t _resetCounterForSetup = 0;
+
+  const char* _setupStoreName = "setup";
+  const char* _setupResetsPreference = "resets";
+
+  bool checkForConfigAtSetup();
+  void checkForConfigAtLoop();
+#  endif
+};
+
 #endif
 
 } // namespace stf

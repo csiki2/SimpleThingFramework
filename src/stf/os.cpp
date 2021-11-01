@@ -36,7 +36,7 @@ void Host::setup() {
   Serial.begin(115200);
   STFLOG_INFO("Starting ESP32... free memory %u (%u)\n", _startingFreeHeap, ESP.getHeapSize());
 
-  mac_to_strid_integrity_check();
+  Mac::integrityCheck();
 
   esp_efuse_mac_get_default(_block.macBuffer);
   _block.create(nullptr, 6);

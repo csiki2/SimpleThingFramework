@@ -28,9 +28,9 @@ namespace stf {
 
 class JsonBuffer {
 public:
-  inline JsonBuffer(char* buffer_, uint size_) : buffer(buffer_), totalSize(size_) {}
+  inline JsonBuffer(char* buffer, uint size) : _buffer(buffer), _totalSize(size) {}
 
-  inline bool isValid() { return jsonSize < totalSize; }
+  inline bool isValid() { return _jsonSize < _totalSize; }
 
   void start();
   void finish();
@@ -38,39 +38,39 @@ public:
   void startElement(const DataBlock& block, DataCache& cache);
   void setElementFailed();
   void addDataBlock(const DataBlock& block_, DataCache& cache);
-  static int blockToStr(char* buffer_, uint len_, const DataBlock& block_, DataCache& cache_);
+  static int blockToStr(char* buffer, uint len, const DataBlock& block, DataCache& cache);
 
   void logContent();
 
   //protected:
   inline bool addChar(const char chr) {
-    if (pos < jsonSize) {
-      buffer[pos++] = chr;
+    if (_pos < _jsonSize) {
+      _buffer[_pos++] = chr;
       return true;
     }
     return false;
   }
 
-  uint pos;
-  const char* elementName;
-  uint elementPos;
-  bool elementFailed;
-  uint failCounter;
+  uint _pos;
+  const char* _elementName;
+  uint _elementPos;
+  bool _elementFailed;
+  uint _failCounter;
 
-  char* buffer;
-  uint jsonSize;
-  uint totalSize;
+  char* _buffer;
+  uint _jsonSize;
+  uint _totalSize;
 
-  static const char openChars[];
-  static const char closeChars[];
+  static const char _openChars[];
+  static const char _closeChars[];
 };
 
 template <uint SIZE>
 class StaticJsonBuffer : public JsonBuffer {
-  char staticBuffer[SIZE];
+  char _staticBuffer[SIZE];
 
 public:
-  inline StaticJsonBuffer() : JsonBuffer(staticBuffer, SIZE){};
+  inline StaticJsonBuffer() : JsonBuffer(_staticBuffer, SIZE){};
 };
 
 } // namespace stf

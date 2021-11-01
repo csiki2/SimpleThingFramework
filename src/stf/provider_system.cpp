@@ -25,27 +25,27 @@ namespace stf {
 
 DEFINE_PROVIDERTASK(SystemProvider, 3, 0, 0);
 
-SystemProvider::SystemProvider() : Provider(g_bufferSystemProvider), lastSystemReport(0), forceSystemReport(false) {
+SystemProvider::SystemProvider() : Provider(g_bufferSystemProvider), _lastSystemReport(0), _forceSystemReport(false) {
 }
 
 const DiscoveryBlock* SystemProvider::_listSystem[] = {&Discovery::_Uptime_S, &Discovery::_Uptime_D, &Discovery::_Free_Memory, nullptr};
-uint SystemProvider::systemDiscovery(DataBuffer* systemBuffer_) {
-  uint res = Discovery::addDiscoveryBlocks(systemBuffer_, etitSYS, _listSystem, eeiNone, nullptr, Host::_name, "Test", "community", "0.01");
+uint SystemProvider::systemDiscovery(DataBuffer* systemBuffer) {
+  uint res = Discovery::addDiscoveryBlocks(systemBuffer, etitSYS, _listSystem, eeiNone, nullptr, Host::_name, "Test", "community", "0.01");
   return res;
 }
 
-uint SystemProvider::systemUpdate(DataBuffer* systemBuffer_, uint32_t uptimeS_) {
-  if (systemBuffer_ == nullptr || systemBuffer_->getFreeBlocks() < 4) return 4;
-  systemBuffer_->nextToWrite(edf__topic, edt_Topic, etitSYS, eeiCacheDeviceHost).setPtr(&Host::_info);
-  systemBuffer_->nextToWrite(edf_uptime_s, edt_32, 0).set64(uptimeS_);
-  systemBuffer_->nextToWrite(edf_uptime_d, edt_32, 0).set32(uptimeS_ / (24 * 60 * 60));
-  systemBuffer_->nextToWrite(edf_ip, edt_Raw, 4 + etirSeparatorDot + etirFormatNumber).setRaw(Host::_ip4, 4);
-  systemBuffer_->nextToWrite(edf_free_memory, edt_32, 0).set32(ESP.getFreeHeap());
+uint SystemProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS) {
+  if (systemBuffer == nullptr || systemBuffer->getFreeBlocks() < 4) return 4;
+  systemBuffer->nextToWrite(edf__topic, edt_Topic, etitSYS, eeiCacheDeviceHost).setPtr(&Host::_info);
+  systemBuffer->nextToWrite(edf_uptime_s, edt_32, 0).set64(uptimeS);
+  systemBuffer->nextToWrite(edf_uptime_d, edt_32, 0).set32(uptimeS / (24 * 60 * 60));
+  systemBuffer->nextToWrite(edf_ip, edt_Raw, 4 + etirSeparatorDot + etirFormatNumber).setRaw(Host::_ip4, 4);
+  systemBuffer->nextToWrite(edf_free_memory, edt_32, 0).set32(ESP.getFreeHeap());
   return 0;
 }
 
 void SystemProvider::requestReport() {
-  SystemProviderObj.forceSystemReport = true;
+  g_SystemProviderObj._forceSystemReport = true;
 }
 
 uint SystemProvider::loop() {
@@ -54,15 +54,15 @@ uint SystemProvider::loop() {
   Consumer* cons = g_bufferSystemProvider->getConsumer();
   if (cons == nullptr || !cons->isReady()) return waitTime;
   uint32_t uptime = Host::uptimeSec32();
-  if (!forceSystemReport && lastSystemReport >= cons->readyTime() && lastSystemReport + updateTimeS > uptime) return waitTime; // no report is needed yet
-  forceSystemReport = false;
+  if (!_forceSystemReport && _lastSystemReport >= cons->readyTime() && _lastSystemReport + updateTimeS > uptime) return waitTime; // no report is needed yet
+  _forceSystemReport = false;
 
   // Generate discovery only once per connection
   int sum = systemUpdate(nullptr, uptime);
   for (Provider* p = _providerHead; p != nullptr; p = (Provider*)p->_objectNext)
     sum += p->systemUpdate(nullptr, uptime);
 
-  if (lastSystemReport < cons->readyTime()) {
+  if (_lastSystemReport < cons->readyTime()) {
     sum += systemDiscovery(nullptr);
     for (Provider* p = _providerHead; p != nullptr; p = (Provider*)p->_objectNext)
       sum += p->systemDiscovery(nullptr);
@@ -74,7 +74,7 @@ uint SystemProvider::loop() {
     if (g_bufferSystemProvider->getFreeBlocks() < sum) return waitTime;
   }
 
-  lastSystemReport = uptime;
+  _lastSystemReport = uptime;
 
   systemUpdate(g_bufferSystemProvider, uptime);
   for (Provider* p = _providerHead; p != nullptr; p = (Provider*)p->_objectNext)
