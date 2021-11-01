@@ -26,24 +26,24 @@ namespace stf {
 
 // Buffer connections with the provider objects
 #undef STF_BUFFER_DECLARE
-#define STF_BUFFER_DECLARE(name, size, task) StaticDataBuffer<size> __attribute__((init_priority(1000))) g_##name(&SimpleTask<EnumSimpleTask::task>::_obj);
+#define STF_BUFFER_DECLARE(name, size, task) StaticDataBuffer<size> g_##name(&SimpleTask<EnumSimpleTask::task>::_obj);
 #undef STF_BUFFER_PROVIDER
 #define STF_BUFFER_PROVIDER(name, provider)
 
 STFBUFFERS;
 
 #define getReadIdx()       atomic_load_explicit(&readIdx, ::memory_order_seq_cst)
-#define setReadIdx(value)  atomic_store_explicit(&readIdx, (value) % (2 * size), ::memory_order_seq_cst)
+#define setReadIdx(value)  atomic_store_explicit(&readIdx, (value) % (2 * _size), ::memory_order_seq_cst)
 #define getWriteIdx()      atomic_load_explicit(&writeIdx, ::memory_order_seq_cst)
-#define setWriteIdx(value) atomic_store_explicit(&writeIdx, (value) % (2 * size), ::memory_order_seq_cst)
+#define setWriteIdx(value) atomic_store_explicit(&writeIdx, (value) % (2 * _size), ::memory_order_seq_cst)
 
-DataBuffer::DataBuffer(TaskRoot* task, DataBlock* buffer_, uint size_) : buffer(buffer_), size(size_) {
+DataBuffer::DataBuffer(TaskRoot* task, DataBlock* buffer, uint size) : _buffer(buffer), _size(size) {
   setReadIdx(0);
   setWriteIdx(0);
 
   _parentTask = task;
 
-  consumerBufferNext = nullptr;
+  _consumerBufferNext = nullptr;
 }
 
 void DataBuffer::init() {
@@ -76,45 +76,45 @@ bool DataBuffer::hasClosedMessage() {
   int widx = getWriteIdx();
 
   if (ridx == widx) return false;
-  if (widx < ridx) widx += 2 * size;
+  if (widx < ridx) widx += 2 * _size;
   for (; ridx < widx; ridx++)
-    if (buffer[ridx % size].isClosedMessage()) return true;
+    if (_buffer[ridx % _size].isClosedMessage()) return true;
   return false;
 }
 
 uint DataBuffer::getUsedBlocks() {
   int ridx = getReadIdx();
   int widx = getWriteIdx();
-  uint written = widx >= ridx ? widx - ridx : 2 * size + widx - ridx;
+  uint written = widx >= ridx ? widx - ridx : 2 * _size + widx - ridx;
   return written;
 }
 
 uint DataBuffer::getFreeBlocks() {
   int ridx = getReadIdx();
   int widx = getWriteIdx();
-  uint written = widx >= ridx ? ridx - widx + size : ridx - widx - size;
+  uint written = widx >= ridx ? ridx - widx + _size : ridx - widx - _size;
   return written;
 }
 
 DataBlock& DataBuffer::getReadBlock() {
   int ridx = getReadIdx();
-  return buffer[ridx % size];
+  return _buffer[ridx % _size];
 }
 
 DataBlock& DataBuffer::getWriteBlock() {
   int widx = getWriteIdx();
-  return buffer[widx % size];
+  return _buffer[widx % _size];
 }
 
-DataBlock& DataBuffer::nextToWrite(EnumDataField field_, EnumDataType type_, uint8_t typeInfo_, uint8_t extra_) {
+DataBlock& DataBuffer::nextToWrite(EnumDataField field, EnumDataType type, uint8_t typeInfo, uint8_t extra) {
   int widx = getWriteIdx();
-  DataBlock& block = buffer[widx % size];
+  DataBlock& block = _buffer[widx % _size];
 
   block.reset();
-  block._field = field_;
-  block._type = type_;
-  block._typeInfo = typeInfo_;
-  block._extra = extra_;
+  block._field = field;
+  block._type = type;
+  block._typeInfo = typeInfo;
+  block._extra = extra;
 
   // This is ok: although it can be read, shouldn't be used till a "closeMessageFlag" block is not in the queue
   setWriteIdx(widx + 1);
@@ -124,12 +124,12 @@ DataBlock& DataBuffer::nextToWrite(EnumDataField field_, EnumDataType type_, uin
 
 // The function assumes that the previous message wasn't closed
 void DataBuffer::closeMessage() {
-  buffer[(getWriteIdx() - 1) % size].closeMessage();
+  _buffer[(getWriteIdx() - 1) % _size].closeMessage();
 }
 
 void DataBuffer::IncrementReadIndex() {
   int ridx = getReadIdx();
-  buffer[ridx % size].reset();
+  _buffer[ridx % _size].reset();
   setReadIdx(ridx + 1);
 }
 

@@ -25,7 +25,7 @@
 namespace stf {
 
 // the size of a block should be 12 bytes
-struct __attribute__((packed)) DataBlock {
+struct STFATTR_PACKED DataBlock {
   inline void reset() {
     (*(uint32_t*)this) = 0;
     _value.t32[0] = 0;
@@ -35,53 +35,53 @@ struct __attribute__((packed)) DataBlock {
   inline void closeMessage() { _closeMessage = 1; }
   inline bool isClosedMessage() const { return _closeMessage != 0; }
 
-  inline DataBlock& setMAC48(const uint8_t* mac_) {
-    for (int idx = 0; idx < 6; idx++) _value.t8[idx] = mac_[idx];
+  inline DataBlock& setMAC48(const uint8_t* mac) {
+    for (int idx = 0; idx < 6; idx++) _value.t8[idx] = mac[idx];
     _value.t16[3] = 0;
     return *this;
   }
-  inline DataBlock& setMAC64(const uint8_t* mac_) {
-    for (int idx = 0; idx < 8; idx++) _value.t8[idx] = mac_[idx];
+  inline DataBlock& setMAC64(const uint8_t* mac) {
+    for (int idx = 0; idx < 8; idx++) _value.t8[idx] = mac[idx];
     return *this;
   }
 
-  inline DataBlock& setPtr(const void* ptr0_) {
-    _value.tPtr[0] = (void*)ptr0_;
+  inline DataBlock& setPtr(const void* ptr0) {
+    _value.tPtr[0] = (void*)ptr0;
     return *this;
   }
-  inline DataBlock& setPtr(const void* ptr0_, const void* ptr1_) {
-    _value.tPtr[0] = (void*)ptr0_;
-    _value.tPtr[1] = (void*)ptr1_;
-    return *this;
-  }
-
-  inline DataBlock& set64(const uint64_t num_) {
-    _value.t64[0] = num_;
+  inline DataBlock& setPtr(const void* ptr0, const void* ptr1) {
+    _value.tPtr[0] = (void*)ptr0;
+    _value.tPtr[1] = (void*)ptr1;
     return *this;
   }
 
-  inline DataBlock& set32(const uint32_t num0_) {
-    _value.t32[0] = num0_;
-    return *this;
-  }
-  inline DataBlock& set32(const uint32_t num0_, const uint32_t num1_) {
-    _value.t32[0] = num0_;
-    _value.t32[1] = num1_;
+  inline DataBlock& set64(const uint64_t num) {
+    _value.t64[0] = num;
     return *this;
   }
 
-  inline DataBlock& setFloat(const float num0_) {
-    _value.tFloat[0] = num0_;
+  inline DataBlock& set32(const uint32_t num0) {
+    _value.t32[0] = num0;
     return *this;
   }
-  inline DataBlock& setFloat(const float num0_, const float num1_) {
-    _value.tFloat[0] = num0_;
-    _value.tFloat[1] = num1_;
+  inline DataBlock& set32(const uint32_t num0, const uint32_t num1) {
+    _value.t32[0] = num0;
+    _value.t32[1] = num1;
     return *this;
   }
 
-  inline DataBlock& setRaw(const uint8_t* raw_, uint len_) {
-    memcpy(_type == edt_Raw ? &_extra : _value.t8, raw_, len_);
+  inline DataBlock& setFloat(const float num0) {
+    _value.tFloat[0] = num0;
+    return *this;
+  }
+  inline DataBlock& setFloat(const float num0, const float num1) {
+    _value.tFloat[0] = num0;
+    _value.tFloat[1] = num1;
+    return *this;
+  }
+
+  inline DataBlock& setRaw(const uint8_t* raw, uint len) {
+    memcpy(_type == edt_Raw ? &_extra : _value.t8, raw, len);
     return *this;
   }
 

@@ -29,23 +29,23 @@ class JsonBuffer;
 // Behaves like a DataBuffer, but instead of collecting all the data it just feeds instantly to the jsonBuffer and the consumer
 class DataFeeder {
 public:
-  DataFeeder(Consumer& consumer_, JsonBuffer& jsonBuffer_);
+  DataFeeder(Consumer& consumer, JsonBuffer& jsonBuffer);
 
-  DataBlock& nextToWrite(EnumDataField field_, EnumDataType type_, uint8_t typeInfo_, uint8_t extra_ = 0);
+  DataBlock& nextToWrite(EnumDataField field, EnumDataType type, uint8_t typeInfo, uint8_t extra = 0);
 
 protected:
-  Consumer& consumer;
-  JsonBuffer& jsonBuffer;
+  Consumer& _consumer;
+  JsonBuffer& _jsonBuffer;
 
-  DataBlock block;
-  DataCache* cache;
-  bool validBlock;
+  DataBlock _block;
+  DataCache* _cache;
+  bool _validBlock;
 
   friend class Consumer;
-  void consumeGeneratorBlock(DataBlock& block_, DataCache& cache_);
+  void consumeGeneratorBlock(DataBlock& block, DataCache& cache);
 };
 
 // Callback function to generate the DataBlocks
-typedef void fnBlockGenerator(DataFeeder& feeder_, const DataBlock& generatorBlock_, DataCache& cache_);
+typedef void fnBlockGenerator(DataFeeder& feeder, const DataBlock& generatorBlock, DataCache& cache);
 
 } // namespace stf

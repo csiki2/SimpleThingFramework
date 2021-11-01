@@ -71,8 +71,6 @@ enum EnumTypeInfoTopic {
 
 };
 
-EnumTypeInfoTopic findTopicInfo(const char* str_, uint strLen_);
-
 enum EnumTypeInfoDevice {
   etidSource0Name = 1,
   etidSource0Model = 2,
@@ -132,8 +130,6 @@ enum EnumTypeInfoHex {
   etihPrefix = 1 << 5
 };
 
-typedef int fnBlockToStr(char* buffer_, uint len_, const DataBlock& block_, DataCache& cache_);
-
 enum EnumCoreType {
   ectNone,
   ectTopic,
@@ -144,12 +140,21 @@ enum EnumCoreType {
 };
 
 struct DataType {
+  typedef int fnBlockToStr(char* buffer, uint len, const DataBlock& block, DataCache& cache);
+
   const fnBlockToStr* _toStr;
   EnumCoreType _coreType : 8;
   EnumTypeSupport _support;
 
-  static const DataType list[];
-  static const uint listNum;
+  static const char* _topicNames[];
+  static EnumTypeInfoTopic findTopicName(const char* str, uint strLen);
+
+  static const DataType _list[];
+  static const uint _listNum;
+
+#define E(e, enclose, support) static int fnDT##e(char* buffer, uint len, const DataBlock& block, DataCache& cache);
+#include <stf/data_type.def>
+#undef E
 };
 
 }; // namespace stf

@@ -25,68 +25,68 @@ namespace stf {
 
 namespace Discovery {
 
-uint addDiscoveryBlocks(DataBuffer* buffer_, uint8_t topic_, const DiscoveryBlock** list_, EnumExtraInfo cacheCmd_, const void* cacheValue_, const char* device_name, const char* device_model, const char* device_manufacturer, const char* device_sw) {
+uint addDiscoveryBlocks(DataBuffer* buffer, uint8_t topic, const DiscoveryBlock** list, EnumExtraInfo cacheCmd, const void* cacheValue, const char* device_name, const char* device_model, const char* device_manufacturer, const char* device_sw) {
   bool bl1 = device_name != nullptr || device_model != nullptr;
   bool bl2 = device_manufacturer != nullptr || device_sw != nullptr;
-  uint need = (bl1 ? 1 : 0) + (bl2 ? 1 : 0) + (cacheCmd_ != 0 ? 1 : 0) + 1;
+  uint need = (bl1 ? 1 : 0) + (bl2 ? 1 : 0) + (cacheCmd != 0 ? 1 : 0) + 1;
 
-  if (buffer_ == nullptr || buffer_->getFreeBlocks() < need) return need;
-  switch (cacheCmd_ & eeiCacheMask) {
+  if (buffer == nullptr || buffer->getFreeBlocks() < need) return need;
+  switch (cacheCmd & eeiCacheMask) {
     case eeiCacheDeviceMAC48:
-      if (cacheValue_ != nullptr) buffer_->nextToWrite(edf__none, edt_None, 0, cacheCmd_).setMAC48((const uint8_t*)cacheValue_);
+      if (cacheValue != nullptr) buffer->nextToWrite(edf__none, edt_None, 0, cacheCmd).setMAC48((const uint8_t*)cacheValue);
       break;
     case eeiCacheDeviceMAC64:
-      if (cacheValue_ != nullptr) buffer_->nextToWrite(edf__none, edt_None, 0, cacheCmd_).setMAC64((const uint8_t*)cacheValue_);
+      if (cacheValue != nullptr) buffer->nextToWrite(edf__none, edt_None, 0, cacheCmd).setMAC64((const uint8_t*)cacheValue);
       break;
     case eeiCacheDeviceHost:
-      if (cacheValue_ != nullptr) buffer_->nextToWrite(edf__none, edt_None, 0, cacheCmd_).setPtr(cacheValue_);
+      if (cacheValue != nullptr) buffer->nextToWrite(edf__none, edt_None, 0, cacheCmd).setPtr(cacheValue);
       break;
   }
 
-  if (bl1) buffer_->nextToWrite(edf__none, edt_None, 0, eeiCacheBlock1).setPtr(device_name, device_model);
-  if (bl2) buffer_->nextToWrite(edf__none, edt_None, 0, eeiCacheBlock2).setPtr(device_manufacturer, device_sw);
-  buffer_->nextToWrite(edf__discList, edt_Generator, topic_).setPtr((const void*)&generateDiscoveryBlocks, (void*)list_).closeMessage();
+  if (bl1) buffer->nextToWrite(edf__none, edt_None, 0, eeiCacheBlock1).setPtr(device_name, device_model);
+  if (bl2) buffer->nextToWrite(edf__none, edt_None, 0, eeiCacheBlock2).setPtr(device_manufacturer, device_sw);
+  buffer->nextToWrite(edf__discList, edt_Generator, topic).setPtr((const void*)&generateDiscoveryBlocks, (void*)list).closeMessage();
   return 0;
 }
 
-void generateDiscoveryBlock(DataFeeder& feeder_, const DataBlock& generatorBlock_, DataCache& cache_, const DiscoveryBlock& discovery_) {
-  if ((generatorBlock_._extra & eeiCacheMask) == eeiCacheDeviceHost)
-    feeder_.nextToWrite(discovery_._field, edt_None, eeiCacheDeviceHost).setPtr(&Host::_info);
+void generateDiscoveryBlock(DataFeeder& feeder, const DataBlock& generatorBlock, DataCache& cache, const DiscoveryBlock& discovery) {
+  if ((generatorBlock._extra & eeiCacheMask) == eeiCacheDeviceHost)
+    feeder.nextToWrite(discovery._field, edt_None, eeiCacheDeviceHost).setPtr(&Host::_info);
   else
-    cache_._block_device._field = discovery_._field;
-  feeder_.nextToWrite(edf__topic, edt_Topic, etitConfig + discovery_._component); // device should be cached already
-  if (discovery_._name != nullptr)
-    feeder_.nextToWrite(edf_name, edt_String, etisSource0Ptr).setPtr(discovery_._name);
+    cache._block_device._field = discovery._field;
+  feeder.nextToWrite(edf__topic, edt_Topic, etitConfig + discovery._component); // device should be cached already
+  if (discovery._name != nullptr)
+    feeder.nextToWrite(edf_name, edt_String, etisSource0Ptr).setPtr(discovery._name);
   else
-    feeder_.nextToWrite(edf_name, edt_String, etisSource0CacheField + etisCaseSmart);
-  if (discovery_._component != edcSwitch) // Home Assistant doesn't accept a switch with unit_of_measurement
-    feeder_.nextToWrite(edf_unit_of_measurement, edt_String, etisSource0Ptr).setPtr(discovery_._measure);
-  feeder_.nextToWrite(edf_state_topic, edt_Topic, etitState + generatorBlock_._typeInfo);
-  if (discovery_._component == edcSwitch)
-    feeder_.nextToWrite(edf_command_topic, edt_Topic, etitCommand + generatorBlock_._typeInfo);
-  feeder_.nextToWrite(edf_unique_id, edt_String, etisSource0MACId + etisSource1CacheField);
-  if (discovery_._device_class != nullptr) {
-    bool useName = strcmp(discovery_._device_class, "_") == 0;
-    feeder_.nextToWrite(edf_device_class, edt_String, etisSource0Ptr + (useName ? etisCaseLower : 0)).setPtr((void*)useName ? discovery_._name : discovery_._device_class);
+    feeder.nextToWrite(edf_name, edt_String, etisSource0CacheField + etisCaseSmart);
+  if (discovery._component != edcSwitch) // Home Assistant doesn't accept a switch with unit_of_measurement
+    feeder.nextToWrite(edf_unit_of_measurement, edt_String, etisSource0Ptr).setPtr(discovery._measure);
+  feeder.nextToWrite(edf_state_topic, edt_Topic, etitState + generatorBlock._typeInfo);
+  if (discovery._component == edcSwitch)
+    feeder.nextToWrite(edf_command_topic, edt_Topic, etitCommand + generatorBlock._typeInfo);
+  feeder.nextToWrite(edf_unique_id, edt_String, etisSource0MACId + etisSource1CacheField);
+  if (discovery._device_class != nullptr) {
+    bool useName = strcmp(discovery._device_class, "_") == 0;
+    feeder.nextToWrite(edf_device_class, edt_String, etisSource0Ptr + (useName ? etisCaseLower : 0)).setPtr((void*)useName ? discovery._name : discovery._device_class);
   }
-  feeder_.nextToWrite(edf_value_template, edt_String, etisSource0FmtPtr + etisSource1CacheField).setPtr("{{ value_json.%s | is_defined }}");
-  feeder_.nextToWrite(edf_device, edt_Device, etidSource0Name + etidSource1Model + etidConnectionsCached + etidIdentifiersCached)._value = cache_._block1._value;
-  DataBlock& devCnt = feeder_.nextToWrite(edf_device, edt_Device, etidSource0Manufacturer + etidSource1SWVersion);
-  devCnt._value = cache_._block2._value;
+  feeder.nextToWrite(edf_value_template, edt_String, etisSource0FmtPtr + etisSource1CacheField).setPtr("{{ value_json.%s | is_defined }}");
+  feeder.nextToWrite(edf_device, edt_Device, etidSource0Name + etidSource1Model + etidConnectionsCached + etidIdentifiersCached)._value = cache._block1._value;
+  DataBlock& devCnt = feeder.nextToWrite(edf_device, edt_Device, etidSource0Manufacturer + etidSource1SWVersion);
+  devCnt._value = cache._block2._value;
   devCnt._closeComplexFlag = 1;
-  feeder_.nextToWrite(edf_platform, edt_String, etisSource0Ptr).setPtr("mqtt").closeMessage();
+  feeder.nextToWrite(edf_platform, edt_String, etisSource0Ptr).setPtr("mqtt").closeMessage();
 }
 
-void generateDiscoveryBlocks(DataFeeder& feeder_, const DataBlock& generatorBlock_, DataCache& cache_) {
-  EnumDataField field = generatorBlock_._field;
+void generateDiscoveryBlocks(DataFeeder& feeder, const DataBlock& generatorBlock, DataCache& cache) {
+  EnumDataField field = generatorBlock._field;
   if (field != edf__discElem && field != edf__discList) return;
 
-  if (!cache_._flagDevice) cache_.addBlock(generatorBlock_, eeiCacheDeviceMainHost);
+  if (!cache._flagDevice) cache.addBlock(generatorBlock, eeiCacheDeviceMainHost);
   if (field == edf__discList) {
-    const DiscoveryBlock** list = (const DiscoveryBlock**)generatorBlock_._value.tPtr[1];
-    for (int idx = 0; *list != nullptr; list++, idx++) generateDiscoveryBlock(feeder_, generatorBlock_, cache_, **list);
+    const DiscoveryBlock** list = (const DiscoveryBlock**)generatorBlock._value.tPtr[1];
+    for (int idx = 0; *list != nullptr; list++, idx++) generateDiscoveryBlock(feeder, generatorBlock, cache, **list);
   } else {
-    generateDiscoveryBlock(feeder_, generatorBlock_, cache_, *(const DiscoveryBlock*)generatorBlock_._value.tPtr[1]);
+    generateDiscoveryBlock(feeder, generatorBlock, cache, *(const DiscoveryBlock*)generatorBlock._value.tPtr[1]);
   }
 }
 

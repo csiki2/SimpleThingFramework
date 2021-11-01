@@ -20,27 +20,27 @@
 
 namespace stf {
 
-void DataCache::addBlock(const DataBlock& block_, uint8_t cmd_) {
-  uint8_t chcmd = cmd_ & eeiCacheMask;
+void DataCache::addBlock(const DataBlock& block, uint8_t cmd) {
+  uint8_t chcmd = cmd & eeiCacheMask;
   switch (chcmd) {
     case eeiCacheBlock1:
-      setBlock1(block_);
+      setBlock1(block);
       break;
     case eeiCacheBlock2:
-      setBlock2(block_);
+      setBlock2(block);
       break;
     case eeiCacheDeviceMAC48:
     case eeiCacheDeviceMAC64:
-      setBlockDevice(block_);
-      _device.create(block_._value.t8, chcmd == eeiCacheDeviceMAC48 ? 6 : 8);
+      setBlockDevice(block);
+      _device.create(block._value.t8, chcmd == eeiCacheDeviceMAC48 ? 6 : 8);
       break;
     case eeiCacheDeviceHost:
-      setBlockDevice(block_);
-      _device.info = *(const DeviceInfo*)block_._value.tPtr[0];
+      setBlockDevice(block);
+      _device.info = *(const DeviceInfo*)block._value.tPtr[0];
       _device.createMissing();
       break;
     case eeiCacheDeviceMainHost:
-      setBlockDevice(block_);
+      setBlockDevice(block);
       _device.info = Host::_info;
       _device.createMissing();
       break;

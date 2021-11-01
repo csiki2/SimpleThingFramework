@@ -20,12 +20,12 @@
 
 namespace stf {
 
-const char* DataField::list[] = {
+const char* DataField::_list[] = {
 #define E(e) #e,
 #include <stf/data_field.def>
 #undef E
 };
 
-const uint DataField::listNum = sizeof(DataField::list) / sizeof(DataField::list[0]);
+const uint DataField::_listNum = sizeof(DataField::_list) / sizeof(DataField::_list[0]);
 
 } // namespace stf

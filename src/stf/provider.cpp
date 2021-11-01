@@ -84,13 +84,13 @@ uint32_t Consumer::readyTime() {
 }
 
 void Consumer::addBuffer(DataBuffer* buffer) {
-  buffer->consumerBufferNext = bufferHead;
-  buffer->parentConsumer = this;
+  buffer->_consumerBufferNext = bufferHead;
+  buffer->_parentConsumer = this;
   bufferHead = buffer;
 }
 
 DataBuffer* Consumer::getNextBuffer(DataBuffer* buffer) {
-  return buffer != nullptr ? buffer->consumerBufferNext : nullptr;
+  return buffer != nullptr ? buffer->_consumerBufferNext : nullptr;
 }
 
 bool Consumer::send(JsonBuffer& jsonBuffer_) {
@@ -146,7 +146,7 @@ int Consumer::consumeBuffer(JsonBuffer& jsonBuffer_, DataBuffer* buffer) {
 }
 
 void Consumer::broadcastFeedback(const FeedbackInfo& info_) {
-  for (DataBuffer* buffer = bufferHead; buffer != nullptr; buffer = buffer->consumerBufferNext) {
+  for (DataBuffer* buffer = bufferHead; buffer != nullptr; buffer = buffer->_consumerBufferNext) {
     for (Provider* provider = Provider::getNext(nullptr, buffer); provider != nullptr; provider = Provider::getNext(provider, buffer))
       provider->feedback(info_);
   }
@@ -164,7 +164,7 @@ void FeedbackInfo::set(const char* topic_, const uint8_t* payload_, unsigned int
   if ((fndB = strstr(topic, "MQTTto")) != nullptr && (fndE = strchr(fndB, '/')) != nullptr) {
     topicStr = fndB + 6;
     topicStrLen = fndE - topicStr;
-    topicEnum = findTopicInfo(topicStr, topicStrLen);
+    topicEnum = DataType::findTopicName(topicStr, topicStrLen);
   } else {
     topicStr = nullptr;
     topicStrLen = 0;
@@ -175,7 +175,7 @@ void FeedbackInfo::set(const char* topic_, const uint8_t* payload_, unsigned int
   fieldStr = (idStr != nullptr && (fndB = strchr(idStr, '_')) != nullptr) ? fndB + 1 : nullptr;
   idStrLen = fieldStr != nullptr ? fndB - idStr : 0;
 
-  fieldEnum = (EnumDataField)Helper::getArrayIndex(fieldStr, strlen(fieldStr), DataField::list, DataField::listNum);
+  fieldEnum = (EnumDataField)Helper::getArrayIndex(fieldStr, strlen(fieldStr), DataField::_list, DataField::_listNum);
 
   //const uint8_t mac[8]; TODO
   //uint macLen;

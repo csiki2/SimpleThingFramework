@@ -39,7 +39,7 @@ struct DeviceBlock {
   uint8_t macBuffer[8];
 
   void reset();
-  void create(const uint8_t* mac_, uint macLen_);
+  void create(const uint8_t* mac, uint macLen);
   void createMissing();
 };
 

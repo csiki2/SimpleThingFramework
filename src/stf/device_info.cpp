@@ -29,9 +29,9 @@ void DeviceBlock::reset() {
   info.strId = strIdBuffer;
 }
 
-void DeviceBlock::create(const uint8_t* mac_, uint macLen_) {
-  if (mac_ != nullptr) memcpy(macBuffer, mac_, macLen_);
-  info.macLen = macLen_;
+void DeviceBlock::create(const uint8_t* mac, uint macLen) {
+  if (mac != nullptr) memcpy(macBuffer, mac, macLen);
+  info.macLen = macLen;
   mac_to_macid(strMACBuffer, macBuffer, info.macLen);
   mac_to_strid(strIdBuffer, macBuffer, info.macLen);
 

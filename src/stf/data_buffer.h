@@ -36,7 +36,7 @@ class Consumer;
 
 class DataBuffer : public Object {
 public:
-  DataBuffer(TaskRoot* task, DataBlock* buffer_, uint size);
+  DataBuffer(TaskRoot* task, DataBlock* buffer, uint size);
 
   virtual void init() override;
   virtual int initPriority() override;
@@ -54,11 +54,11 @@ public:
   void IncrementReadIndex();
   void IncrementWriteIndex();
 
-  DataBlock& nextToWrite(EnumDataField field_, EnumDataType type_, uint8_t typeInfo_, uint8_t extra_ = 0);
+  DataBlock& nextToWrite(EnumDataField field, EnumDataType type, uint8_t typeInfo, uint8_t extra = 0);
   void closeMessage();
 
   inline Consumer* getConsumer() {
-    return parentConsumer;
+    return _parentConsumer;
   }
 
 protected:
@@ -70,26 +70,26 @@ protected:
     int volatile __val;
   } readIdx; // atomic_int readIdx
 
-  int head, tail;
-  DataBlock* buffer;
-  uint size;
+  int _head, _tail;
+  DataBlock* _buffer;
+  uint _size;
 
   friend class TaskRoot;
   TaskRoot* _parentTask;
 
   // List of buffers for the consumer
-  DataBuffer* consumerBufferNext;
-  Consumer* parentConsumer;
+  DataBuffer* _consumerBufferNext;
+  Consumer* _parentConsumer;
   friend class Consumer;
 };
 
-template <uint size_>
+template <uint SIZE>
 class StaticDataBuffer : public DataBuffer {
 public:
-  StaticDataBuffer(TaskRoot* task) : DataBuffer(task, localBuffer, size_){};
+  StaticDataBuffer(TaskRoot* task) : DataBuffer(task, localBuffer, SIZE){};
 
 protected:
-  DataBlock localBuffer[size_];
+  DataBlock localBuffer[SIZE];
 };
 
 #define STF_BUFFER0(name, size, task) STF_BUFFER_DECLARE(name, size, task)

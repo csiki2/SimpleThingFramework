@@ -59,8 +59,8 @@ struct DataCache {
     _flagDevice = _flagBlock1 = _flagBlock2 = _flagHeadElem = _flagFeederActive = false;
   }
 
-  inline void setHeadElem(const DataBlock& block_) {
-    _headElem = block_;
+  inline void setHeadElem(const DataBlock& block) {
+    _headElem = block;
     _flagHeadElem = true;
   }
 
@@ -71,22 +71,22 @@ struct DataCache {
     }
   }
 
-  inline void setBlock1(const DataBlock& block_) {
-    _block1 = block_;
+  inline void setBlock1(const DataBlock& block) {
+    _block1 = block;
     _flagBlock1 = true;
   }
 
-  inline void setBlock2(const DataBlock& block_) {
-    _block2 = block_;
+  inline void setBlock2(const DataBlock& block) {
+    _block2 = block;
     _flagBlock2 = true;
   }
 
-  inline void setBlockDevice(const DataBlock& block_) {
-    _block_device = block_;
+  inline void setBlockDevice(const DataBlock& block) {
+    _block_device = block;
     _flagDevice = true;
   }
 
-  void addBlock(const DataBlock& block_, uint8_t cmd_);
+  void addBlock(const DataBlock& block, uint8_t cmd);
 };
 
 } // namespace stf

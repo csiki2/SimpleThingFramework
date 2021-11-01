@@ -51,7 +51,7 @@ void JsonBuffer::setElementFailed() {
 
 void JsonBuffer::startElement(const DataBlock& block, DataCache& cache_) {
   elementPos = pos;
-  elementName = DataField::list[block._field];
+  elementName = DataField::_list[block._field];
   elementFailed = false;
   if (block._field == edf__cont) return;
 
@@ -65,7 +65,7 @@ void JsonBuffer::startElement(const DataBlock& block, DataCache& cache_) {
 }
 
 void JsonBuffer::addDataBlock(const DataBlock& block_, DataCache& cache_) {
-  DataType type = DataType::list[block_._type];
+  DataType type = DataType::_list[block_._type];
   if ((type._support & etSupportSaveToCache) != 0) cache_.addBlock(block_, block_._extra);
 
   if (type._coreType == ectNone) {
@@ -110,15 +110,11 @@ void JsonBuffer::addDataBlock(const DataBlock& block_, DataCache& cache_) {
 
 // buffer_ is not allowed to be nullptr, buffer_[-1] must be valid
 int JsonBuffer::blockToStr(char* buffer_, uint len_, const DataBlock& block_, DataCache& cache_) {
-  //STFLOG_DEBUG("JsonBuffer::blockToStr called.\n");
-  const DataType& type_ = DataType::list[block_._type];
-  //STFLOG_INFO("blockToStr 1 %s\n", DataField::list[block_.fieldIndex]);
+  const DataType& type_ = DataType::_list[block_._type];
   if (type_._coreType == ectNone) { // Just call it...
-    //STFLOG_DEBUG("JsonBuffer::blockToStr ectNone called.\n");
     type_._toStr(nullptr, 0, block_, cache_);
     return 0;
   }
-  //STFLOG_DEBUG("JsonBuffer::blockToStr field %u.\n", block_._field);
   if (block_._field == edf__none) return 0;
 
   bool startElem = cache_._headElem._field == edf__none;
@@ -130,7 +126,6 @@ int JsonBuffer::blockToStr(char* buffer_, uint len_, const DataBlock& block_, Da
   if (complexElem) {
     if (startElem) {
       cache_.setHeadElem(block_);
-      //STFLOG_DEBUG("Setting headElem %d %d\n", block_._field, block_._type);
       if (tlen < len_) buffer_[tlen] = oc;
       tlen++;
     } else if (block_._field != edf__topic) {
@@ -155,9 +150,8 @@ int JsonBuffer::blockToStr(char* buffer_, uint len_, const DataBlock& block_, Da
     if (tlen < len_) buffer_[tlen] = '\"';
     tlen++;
   }
-  //STFLOG_DEBUG("JsonBuffer::blockToStr type_.toStr %u.\n", type_.coreType);
+
   int len = type_._toStr(buffer_ + tlen, tlen < len_ ? len_ : 0, block_, cache_);
-  //STFLOG_DEBUG("JsonBuffer::blockToStr type_.toStr %u - finished %d.\n", type_.coreType, len);
   if (len < 0) return len;
   tlen += len;
   if (qm) {
@@ -170,7 +164,6 @@ int JsonBuffer::blockToStr(char* buffer_, uint len_, const DataBlock& block_, Da
     if (tlen < len_) buffer_[tlen] = closeChars[type_._coreType];
     tlen++;
   }
-  //STFLOG_DEBUG("JsonBuffer::blockToStr finished.\n");
   return tlen - clen;
 }
 

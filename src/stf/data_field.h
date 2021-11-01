@@ -29,8 +29,8 @@ enum EnumDataField {
 };
 
 struct DataField {
-  static const char* list[];
-  static const uint listNum;
+  static const char* _list[];
+  static const uint _listNum;
 };
 
 } // namespace stf

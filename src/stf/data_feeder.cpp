@@ -23,45 +23,45 @@
 
 namespace stf {
 
-DataFeeder::DataFeeder(Consumer& consumer_, JsonBuffer& jsonBuffer_) : consumer(consumer_), jsonBuffer(jsonBuffer_) {
+DataFeeder::DataFeeder(Consumer& consumer, JsonBuffer& jsonBuffer) : _consumer(consumer), _jsonBuffer(jsonBuffer) {
 }
 
-DataBlock& DataFeeder::nextToWrite(EnumDataField field_, EnumDataType type_, uint8_t typeInfo_, uint8_t extra_) {
-  if (validBlock) { // first resolve the block
-    jsonBuffer.addDataBlock(block, *cache);
-    if (block.isClosedMessage()) consumer.onCloseMessageEvent(jsonBuffer, *cache);
+DataBlock& DataFeeder::nextToWrite(EnumDataField field, EnumDataType type, uint8_t typeInfo, uint8_t extra) {
+  if (_validBlock) { // first resolve the block
+    _jsonBuffer.addDataBlock(_block, *_cache);
+    if (_block.isClosedMessage()) _consumer.onCloseMessageEvent(_jsonBuffer, *_cache);
   }
 
-  block.reset();
-  block._field = field_;
-  block._type = type_;
-  block._typeInfo = typeInfo_;
-  block._extra = extra_;
+  _block.reset();
+  _block._field = field;
+  _block._type = type;
+  _block._typeInfo = typeInfo;
+  _block._extra = extra;
 
-  validBlock = true;
+  _validBlock = true;
 
-  return block;
+  return _block;
 }
 
-void DataFeeder::consumeGeneratorBlock(DataBlock& block_, DataCache& cache_) {
-  cache = &cache_;
-  validBlock = false;
+void DataFeeder::consumeGeneratorBlock(DataBlock& block, DataCache& cache) {
+  _cache = &cache;
+  _validBlock = false;
 
-  bool feederActive = cache_._flagFeederActive;
-  cache_._flagFeederActive = true;
-  fnBlockGenerator* fn = (fnBlockGenerator*)block_._value.tPtr[0];
-  if (fn != nullptr) (*fn)(*this, block_, cache_);
-  if (block_.isClosedMessage()) cache_._flagFeederActive = feederActive; // don't reset the cache at onCloseMessageEvent if the generator is not closedMessage
+  bool feederActive = cache._flagFeederActive;
+  cache._flagFeederActive = true;
+  fnBlockGenerator* fn = (fnBlockGenerator*)block._value.tPtr[0];
+  if (fn != nullptr) (*fn)(*this, block, cache);
+  if (block.isClosedMessage()) cache._flagFeederActive = feederActive; // don't reset the cache at onCloseMessageEvent if the generator is not closedMessage
 
-  if (validBlock) { // resolve the last
-    if (block_._closeComplexFlag) block._closeComplexFlag = 1;
-    if (block_.isClosedMessage()) block.closeMessage();
-    jsonBuffer.addDataBlock(block, *cache);
-    if (block.isClosedMessage()) consumer.onCloseMessageEvent(jsonBuffer, cache_);
+  if (_validBlock) { // resolve the last
+    if (block._closeComplexFlag) _block._closeComplexFlag = 1;
+    if (block.isClosedMessage()) _block.closeMessage();
+    _jsonBuffer.addDataBlock(_block, *_cache);
+    if (_block.isClosedMessage()) _consumer.onCloseMessageEvent(_jsonBuffer, cache);
   } else {
-    if (block_.isClosedMessage()) consumer.onCloseMessageEvent(jsonBuffer, cache_);
+    if (block.isClosedMessage()) _consumer.onCloseMessageEvent(_jsonBuffer, cache);
   }
-  cache_._flagFeederActive = feederActive;
+  cache._flagFeederActive = feederActive;
 }
 
 } // namespace stf
