@@ -51,8 +51,10 @@ enum EnumExtraInfo {
   eeiCacheDeviceHost = 5,
   eeiCacheDeviceMainHost = 6,
   eeiCacheMask = 7,
+};
 
-  eeiDoubleField = 8,
+enum EnumTypeInfoSupport {
+  etiDoubleField = 128, // so the extra field can be used
 };
 
 enum EnumTypeInfoTopic {

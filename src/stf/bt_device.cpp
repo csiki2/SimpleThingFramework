@@ -82,7 +82,7 @@ EnumBTResult BTResolver::serviceMiBacon(const uint8_t* mac, uint8_t macType, uin
     case 13:
       if (vlen != 4) return EnumBTResult::Unknown;
       if (buffer.getFreeBlocks() < 3) return EnumBTResult::SmallBuffer;
-      buffer.nextToWrite(edf_tempc, edt_Float, 1, eeiDoubleField).setFloat(getBufferValue(serviceData + 14, 2) / 10.f, getBufferValue(serviceData + 16, 2) / 10.f)._extra = edf_hum;
+      buffer.nextToWrite(edf_tempc, edt_Float, 1 + etiDoubleField, edf_hum).setFloat(getBufferValue(serviceData + 14, 2) / 10.f, getBufferValue(serviceData + 16, 2) / 10.f);
       //buffer_.nextToWrite(edf_hum, edt_Float, 1).setFloat(GetBufferValue(serviceData_ + 16, 2) / 10.f);
       break;
 
@@ -106,7 +106,7 @@ EnumBTResult BTResolver::serviceTelinkLYWSD03MMC_atc1441_pvvx(const uint8_t* mac
 
   if (buffer.getFreeBlocks() < 5) return EnumBTResult::SmallBuffer;
   buffer.nextToWrite(edf__topic, edt_Topic, etitBT, eeiCacheDeviceMAC48).setMAC48(mac);
-  buffer.nextToWrite(edf_tempc, edt_Float, 2, eeiDoubleField).setFloat(getBufferValue(serviceData + 6, 2) / 100.f, getBufferValue(serviceData + 8, 2) / 100.f)._extra = edf_hum;
+  buffer.nextToWrite(edf_tempc, edt_Float, 2 + etiDoubleField, edf_hum).setFloat(getBufferValue(serviceData + 6, 2) / 100.f, getBufferValue(serviceData + 8, 2) / 100.f);
   buffer.nextToWrite(edf_batt, edt_32, 0).set32(getBufferValue(serviceData + 12, 1));
   buffer.nextToWrite(edf_volt, edt_Float, 3).setFloat(getBufferValue(serviceData + 10, 2) / 1000.f);
   buffer.nextToWrite(edf_model, edt_String, 0).setPtr((const char*)model);

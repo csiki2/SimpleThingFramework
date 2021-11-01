@@ -93,7 +93,7 @@ void JsonBuffer::addDataBlock(const DataBlock& block_, DataCache& cache_) {
     else
       setElementFailed();
   }
-  if ((type._support & etSupportDoubleField) == 0 || (block_._extra & eeiDoubleField) == 0) return;
+  if ((type._support & etSupportDoubleField) == 0 || (block_._typeInfo & etiDoubleField) == 0) return;
   // Let's go for one more round :)
   DataBlock block = block_;
   block._field = (EnumDataField)block._extra;
