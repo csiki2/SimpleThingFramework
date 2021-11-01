@@ -48,9 +48,13 @@ struct FeedbackInfo {
 
 // The provider feeds data into the buffer
 // Since the buffer is a lockless queue all provider for the same buffer must run on the same task
-class Provider {
+class Provider : public Object {
 public:
-  Provider(DataBuffer* buffer_);
+  Provider(DataBuffer* buffer);
+
+  virtual void init() override;
+  virtual int initPriority() override;
+  virtual Object** getObjectHead();
 
   virtual void setup();
   virtual uint loop() = 0;
@@ -58,26 +62,21 @@ public:
   virtual uint systemUpdate(DataBuffer* systemBuffer_, uint32_t uptimeS_);
   virtual void feedback(const FeedbackInfo& info_);
 
-  void registerSystemUpdate();
   bool isConsumerReady() const;
 
-protected:
-  DataBuffer* buffer;
-  Provider* providerNext;
-  Provider* systemNext;
-  static Provider* systemHead;
+  static Provider* getNext(Provider* provider, DataBuffer* parentBuffer);
 
+protected:
+  DataBuffer* _parentBuffer;
+
+  static Provider* _providerHead;
+
+  friend class DataBuffer;
   friend class Consumer;
   friend class SystemProvider;
 };
 
-#define DEFINE_PROVIDERTASK(name, order, core, stackSize)                                                                         \
-  name name##Obj;                                                                                                                 \
-  void setupProviderTask(void*);                                                                                                  \
-  uint loopProviderTask(void*);                                                                                                   \
-  const TaskDescriptor descriptor##name##Task = {setupProviderTask, loopProviderTask, &name##Obj, #name, stackSize, core, order}; \
-  TaskRegister register##name##Task(&descriptor##name##Task);                                                                     \
-  extern DataBuffer& buffer##name;
+#define DEFINE_PROVIDERTASK(name, order, core, stackSize) name name##Obj;
 
 // A consumer can read one or more buffer
 class Consumer {

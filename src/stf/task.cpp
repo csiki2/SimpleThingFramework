@@ -17,8 +17,14 @@
 */
 
 #include <stf/os.h>
+#include <stf/data_buffer.h>
 
 namespace stf {
+
+// We always have "Main" task
+template <>
+const TaskDescriptor SimpleTask<EnumSimpleTask::Main>::_descriptor = {&_obj, "MainTask", 0, 0, 0};
+template class SimpleTask<EnumSimpleTask::Main>;
 
 TaskRoot::TaskRoot() {
 }
@@ -26,11 +32,10 @@ TaskRoot::TaskRoot() {
 TaskRoot::~TaskRoot() {
 }
 
-void TaskRoot::initTask(const TaskDescriptor2* descriptor) {
-  _handle = nullptr;
+void TaskRoot::initTask(const TaskDescriptor* descriptor) {
   _descriptorPtr = descriptor;
   uint8_t order = descriptor->taskOrder;
-  TaskRoot** task = &_head;
+  TaskRoot** task = &_taskHead;
   while (*task != nullptr && (*task)->_descriptorPtr->taskOrder <= order)
     task = &((*task)->_next);
   _next = *task;
@@ -39,22 +44,36 @@ void TaskRoot::initTask(const TaskDescriptor2* descriptor) {
 }
 
 void TaskRoot::setup() {
+  for (DataBuffer* db = _bufferHead; db != nullptr; db = (DataBuffer*)db->_objectNext) {
+    STFLOG_INFO("TaskRoot::setup %p\n", this);
+    db->setupProviders();
+  }
 }
 
-TaskRoot* TaskRoot::_head = nullptr;
+uint TaskRoot::loop() {
+  uint wait = 100;
+  for (DataBuffer* db = _bufferHead; db != nullptr; db = (DataBuffer*)db->_objectNext) {
+    uint res = db->loopProviders();
+    if (res < wait) wait = res;
+  }
+
+  return wait;
+}
+
+TaskRoot* TaskRoot::_taskHead = nullptr;
 int TaskRoot::_count = 0;
 
 void TaskRoot::setupTasks() {
   STFLOG_INFO("TaskRoot::setupTasks started.\n");
-  for (TaskRoot* tr = TaskRoot::_head; tr != nullptr; tr = tr->_next) {
+  for (TaskRoot* tr = TaskRoot::_taskHead; tr != nullptr; tr = tr->_next) {
     STFLOG_INFO("Calling setup method for %s\n", tr->_descriptorPtr->taskName);
     tr->setup();
   }
   STFLOG_INFO("Total number of tasks: %d\n", TaskRoot::_count);
 
   STFLOG_INFO("TaskRoot::setupTasks - rts task creation\n");
-  for (TaskRoot* tr = TaskRoot::_head; tr != nullptr; tr = tr->_next) {
-    const TaskDescriptor2* desc = tr->_descriptorPtr;
+  for (TaskRoot* tr = TaskRoot::_taskHead; tr != nullptr; tr = tr->_next) {
+    const TaskDescriptor* desc = tr->_descriptorPtr;
     if (desc->taskStackSize != 0) {
       int core = desc->taskCore == tskNO_AFFINITY || desc->taskCore < portNUM_PROCESSORS ? desc->taskCore : 0;
       xTaskCreatePinnedToCore(loopTask, desc->taskName, desc->taskStackSize, (void*)tr, 1, &tr->_handle, core);
@@ -73,54 +92,9 @@ void TaskRoot::loopTask(void* ptr) {
 
 uint TaskRoot::loopTasks() {
   uint wait = 500;
-  for (TaskRoot* tr = TaskRoot::_head; tr != nullptr; tr = tr->_next) {
+  for (TaskRoot* tr = TaskRoot::_taskHead; tr != nullptr; tr = tr->_next) {
     if (tr->_descriptorPtr->taskStackSize == 0) {
       uint waitLocal = tr->loop();
-      if (wait > waitLocal) wait = waitLocal;
-    }
-  }
-  return wait;
-}
-
-TaskRegister* TaskRegister::_head = nullptr;
-
-TaskRegister::TaskRegister(const TaskDescriptor* descriptor_) : _descriptor(descriptor_) {
-  TaskRegister** descPtrPtr = &_head;
-  while (*descPtrPtr != nullptr && (*descPtrPtr)->_descriptor->_taskOrder <= _descriptor->_taskOrder)
-    descPtrPtr = &((*descPtrPtr)->_next);
-  _next = *descPtrPtr;
-  (*descPtrPtr) = this;
-}
-
-void taskCoreLoop(void* ptr) {
-  TaskDescriptor* desc = (TaskDescriptor*)ptr;
-  for (;;) {
-    uint wait = desc->_funcLoop(desc->_userPtr);
-    delay(wait);
-  }
-}
-
-void task_setup() {
-  STFLOG_INFO("Call task_setup\n");
-  for (TaskRegister* next = TaskRegister::_head; next != nullptr; next = next->_next)
-    next->_descriptor->_funcSetup(next->_descriptor->_userPtr);
-  STFLOG_INFO("Call task_setup - rts task creation\n");
-  for (TaskRegister* next = TaskRegister::_head; next != nullptr; next = next->_next) {
-    const TaskDescriptor* desc = next->_descriptor;
-    if (desc->_taskStackSize != 0) {
-      int core = desc->_taskCore == tskNO_AFFINITY || desc->_taskCore < portNUM_PROCESSORS ? desc->_taskCore : 0;
-      xTaskCreatePinnedToCore(taskCoreLoop, desc->_taskName, desc->_taskStackSize, (void*)desc, 1, &next->_handle, core);
-    }
-  }
-  STFLOG_INFO("Call task_setup finished\n");
-}
-
-uint task_loop() {
-  uint wait = 500;
-  for (TaskRegister* next = TaskRegister::_head; next != nullptr; next = next->_next) {
-    const TaskDescriptor* desc = next->_descriptor;
-    if (desc->_taskStackSize == 0) {
-      uint waitLocal = desc->_funcLoop(desc->_userPtr);
       if (wait > waitLocal) wait = waitLocal;
     }
   }

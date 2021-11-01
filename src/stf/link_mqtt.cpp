@@ -57,7 +57,7 @@ void MQTTConsumer::setup() {
   client.setCallback(callback);
 
 #  undef STF_BUFFER_DECLARE
-#  define STF_BUFFER_DECLARE(name, size) MQTTConsumerObj.addBuffer(&name);
+#  define STF_BUFFER_DECLARE(name, size, task) MQTTConsumerObj.addBuffer(&g_##name);
 #  undef STF_BUFFER_PROVIDER
 #  define STF_BUFFER_PROVIDER(name, provider)
   STFBUFFERS;

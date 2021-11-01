@@ -26,9 +26,9 @@ namespace stf {
 
 // Buffer connections with the provider objects
 #undef STF_BUFFER_DECLARE
-#define STF_BUFFER_DECLARE(name, size) StaticDataBuffer<size> __attribute__((init_priority(1000))) name;
+#define STF_BUFFER_DECLARE(name, size, task) StaticDataBuffer<size> __attribute__((init_priority(1000))) g_##name(&SimpleTask<EnumSimpleTask::task>::_obj);
 #undef STF_BUFFER_PROVIDER
-#define STF_BUFFER_PROVIDER(name, provider) DataBuffer& buffer##provider = name;
+#define STF_BUFFER_PROVIDER(name, provider)
 
 STFBUFFERS;
 
@@ -37,12 +37,38 @@ STFBUFFERS;
 #define getWriteIdx()      atomic_load_explicit(&writeIdx, ::memory_order_seq_cst)
 #define setWriteIdx(value) atomic_store_explicit(&writeIdx, (value) % (2 * size), ::memory_order_seq_cst)
 
-DataBuffer::DataBuffer(DataBlock* buffer_, uint size_) : buffer(buffer_), size(size_) {
+DataBuffer::DataBuffer(TaskRoot* task, DataBlock* buffer_, uint size_) : buffer(buffer_), size(size_) {
   setReadIdx(0);
   setWriteIdx(0);
 
-  providerHead = nullptr;
-  bufferNext = nullptr;
+  _parentTask = task;
+
+  consumerBufferNext = nullptr;
+}
+
+void DataBuffer::init() {
+}
+
+int DataBuffer::initPriority() {
+  return 10;
+}
+
+Object** DataBuffer::getObjectHead() {
+  return (Object**)(_parentTask != nullptr ? &_parentTask->_bufferHead : nullptr);
+}
+
+void DataBuffer::setupProviders() {
+  for (Provider* pr = Provider::getNext(nullptr, this); pr != nullptr; pr = Provider::getNext(pr, this))
+    pr->setup();
+}
+
+uint DataBuffer::loopProviders() {
+  uint wait = 100;
+  for (Provider* pr = Provider::getNext(nullptr, this); pr != nullptr; pr = Provider::getNext(pr, this)) {
+    uint res = pr->loop();
+    if (res < wait) wait = res;
+  }
+  return wait;
 }
 
 bool DataBuffer::hasClosedMessage() {

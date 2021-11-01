@@ -16,16 +16,33 @@
   limitations under the License.
 */
 
-#include <stf/os.h>
+#pragma once
 
-void setup() {
-  stf::Host::setup();
-  stf::Object::initObjects();
-  stf::TaskRoot::setupTasks();
-}
+namespace stf {
 
-void loop() {
-  STFLED_COMMAND(STFLEDEVENT_WATCHDOG);
-  uint wait = stf::TaskRoot::loopTasks();
-  delay(wait);
-}
+class Mutex;
+
+class Object {
+public:
+  Object() { addToList(_objectHead, _objectMutex); }
+  virtual ~Object();
+
+  virtual void init();
+  virtual int initPriority();
+  virtual Object** getObjectHead();
+
+  static void initObjects();
+
+protected:
+  bool addToList(Object*& head, Mutex& mutex);
+  bool removeFromList(Object*& head, Mutex& mutex);
+
+  static Object* _objectHead;
+  static Mutex _objectMutex;
+  Object* _objectNext;
+
+  friend void ::setup();
+  friend void ::loop();
+};
+
+} // namespace stf

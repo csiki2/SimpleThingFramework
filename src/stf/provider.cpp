@@ -25,26 +25,35 @@
 
 namespace stf {
 
-Provider* Provider::systemHead = nullptr;
+Provider* Provider::_providerHead = nullptr;
 
-Provider::Provider(DataBuffer* buffer_) : buffer(buffer_) {
-  systemNext = nullptr;
-  providerNext = buffer->providerHead;
-  buffer->providerHead = this;
-};
+Provider::Provider(DataBuffer* buffer) : _parentBuffer(buffer){};
+
+void Provider::init() {
+}
+
+int Provider::initPriority() {
+  return 20;
+}
+
+Object** Provider::getObjectHead() {
+  return (Object**)&_providerHead;
+}
+
+Provider* Provider::getNext(Provider* provider, DataBuffer* parentBuffer) {
+  provider = provider == nullptr ? _providerHead : (Provider*)provider->_objectNext;
+  while (provider != nullptr && provider->_parentBuffer != parentBuffer)
+    provider = (Provider*)provider->_objectNext;
+  return provider;
+}
 
 void Provider::setup() {
 }
 
 bool Provider::isConsumerReady() const {
-  if (buffer == nullptr) return false;
-  Consumer* cons = buffer->getConsumer();
+  if (_parentBuffer == nullptr) return false;
+  Consumer* cons = _parentBuffer->getConsumer();
   return cons != nullptr && cons->isReady();
-}
-
-void Provider::registerSystemUpdate() {
-  systemNext = systemHead;
-  systemHead = this;
 }
 
 uint Provider::systemDiscovery(DataBuffer* systemBuffer_) {
@@ -75,13 +84,13 @@ uint32_t Consumer::readyTime() {
 }
 
 void Consumer::addBuffer(DataBuffer* buffer) {
-  buffer->bufferNext = bufferHead;
+  buffer->consumerBufferNext = bufferHead;
   buffer->parentConsumer = this;
   bufferHead = buffer;
 }
 
 DataBuffer* Consumer::getNextBuffer(DataBuffer* buffer) {
-  return buffer != nullptr ? buffer->bufferNext : nullptr;
+  return buffer != nullptr ? buffer->consumerBufferNext : nullptr;
 }
 
 bool Consumer::send(JsonBuffer& jsonBuffer_) {
@@ -137,8 +146,8 @@ int Consumer::consumeBuffer(JsonBuffer& jsonBuffer_, DataBuffer* buffer) {
 }
 
 void Consumer::broadcastFeedback(const FeedbackInfo& info_) {
-  for (DataBuffer* buffer = bufferHead; buffer != nullptr; buffer = buffer->bufferNext) {
-    for (Provider* provider = buffer->providerHead; provider != nullptr; provider = provider->providerNext)
+  for (DataBuffer* buffer = bufferHead; buffer != nullptr; buffer = buffer->consumerBufferNext) {
+    for (Provider* provider = Provider::getNext(nullptr, buffer); provider != nullptr; provider = Provider::getNext(provider, buffer))
       provider->feedback(info_);
   }
 }

@@ -46,8 +46,7 @@ DEFINE_PROVIDERTASK(BTProvider, 4, 0, 0);
 
 BTDeviceGroup BTProvider::_discoveryList;
 
-BTProvider::BTProvider() : Provider(&bufferBTProvider) {
-  registerSystemUpdate();
+BTProvider::BTProvider() : Provider(g_bufferBTProvider) {
 }
 
 void generateBTBlocks(DataFeeder& feeder_, const DataBlock& generatorBlock_, DataCache& cache_) {
@@ -94,7 +93,7 @@ class BTProviderDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
     mac[5] ^= STFBLE_TEST_XOR;
 #endif
 
-    int statFreeBlocksBegin = bufferBTProvider.getFreeBlocks();
+    int statFreeBlocksBegin = g_bufferBTProvider->getFreeBlocks();
     uint sdCount = ble_device_->getServiceDataCount();
     for (uint sdidx = 0; sdidx < sdCount; sdidx++) {
       std::string data = ble_device_->getServiceData(sdidx);
@@ -106,19 +105,19 @@ class BTProviderDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
         uint32_t uuid32 = bs == 16 ? (uint32_t)uuid.getNative()->u16.value : uuid.getNative()->u32.value;
         const uint8_t* serviceDataBuffer = (const uint8_t*)data.data();
         uint serviceDataLength = data.length();
-        res = BTResolver::resolve(mac, macType, uuid32, serviceDataBuffer, serviceDataLength, bufferBTProvider);
+        res = BTResolver::resolve(mac, macType, uuid32, serviceDataBuffer, serviceDataLength, *g_bufferBTProvider);
         if (res != EnumBTResult::Resolved) {
           const char* msg = res == EnumBTResult::Unknown ? "Unknown " : "No buffer for the";
           STFLOG_WARNING("%s message type %0x from %02x%02x%02x%02x%02x%02x\n", msg, uuid32, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
         } else {
           // Finish the buffer
-          uint freeBlocks = bufferBTProvider.getFreeBlocks();
+          uint freeBlocks = g_bufferBTProvider->getFreeBlocks();
 
           if (freeBlocks >= 1) { // Generator function for 4-5 elements
             int8_t txpw = ble_device_->haveTXPower() ? ble_device_->getTXPower() : 127;
             int rssiInt = ble_device_->haveRSSI() ? ble_device_->getRSSI() : 127;
             int8_t rssi = rssiInt < -128 ? -128 : (rssiInt > 127 ? 127 : (int8_t)rssiInt);
-            DataBlock& genBlock = bufferBTProvider.nextToWrite(edf__none, edt_Generator, rssi).setPtr((const void*)&generateBTBlocks);
+            DataBlock& genBlock = g_bufferBTProvider->nextToWrite(edf__none, edt_Generator, rssi).setPtr((const void*)&generateBTBlocks);
             genBlock._value.t32[1] = uuid32;
             genBlock._extra = txpw;
           }
@@ -127,13 +126,13 @@ class BTProviderDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
             EnumDataField fld = edf_servicedata;
             for (uint cpy; serviceDataLength > 0 || fld == edf_servicedata; serviceDataBuffer += cpy, serviceDataLength -= cpy, fld = edf__cont) {
               cpy = serviceDataLength > sizeof(DataBlock::_value) + sizeof(DataBlock::_extra) ? sizeof(DataBlock::_value) + sizeof(DataBlock::_extra) : serviceDataLength;
-              bufferBTProvider.nextToWrite(fld, edt_Raw, cpy + etirFormatHexLower).setRaw(serviceDataBuffer, cpy);
+              g_bufferBTProvider->nextToWrite(fld, edt_Raw, cpy + etirFormatHexLower).setRaw(serviceDataBuffer, cpy);
             }
             //freeBlocks = btBuffer.getFreeBlocks();
           }
 
-          int statFreeBlocksEnd = bufferBTProvider.getFreeBlocks();
-          bufferBTProvider.closeMessage();
+          int statFreeBlocksEnd = g_bufferBTProvider->getFreeBlocks();
+          g_bufferBTProvider->closeMessage();
           BTProviderObj._packetsForwarded++;
           STFLOG_INFO("Total blocks used for the BT messages: %u\n", statFreeBlocksBegin - statFreeBlocksEnd); // not correct, will need fix
         }
@@ -180,7 +179,7 @@ uint BTProvider::loop() {
   NimBLEScan* scan = NimBLEDevice::getScan();
   bool isScanning = scan->isScanning();
   if (isConsumerReady()) {
-    uint32_t readyTime = bufferBTProvider.getConsumer()->readyTime();
+    uint32_t readyTime = g_bufferBTProvider->getConsumer()->readyTime();
     if (_discoveryList._connectionTime < readyTime) _discoveryList._connectionTime = readyTime;
     if (!isScanning) scan->start(0, nullptr, false);
   } else {

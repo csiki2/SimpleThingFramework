@@ -25,7 +25,7 @@ namespace stf {
 
 DEFINE_PROVIDERTASK(SystemProvider, 3, 0, 0);
 
-SystemProvider::SystemProvider() : Provider(&bufferSystemProvider), lastSystemReport(0), forceSystemReport(false) {
+SystemProvider::SystemProvider() : Provider(g_bufferSystemProvider), lastSystemReport(0), forceSystemReport(false) {
 }
 
 const DiscoveryBlock* SystemProvider::_listSystem[] = {&Discovery::_Uptime_S, &Discovery::_Uptime_D, &Discovery::_Free_Memory, nullptr};
@@ -51,7 +51,7 @@ void SystemProvider::requestReport() {
 uint SystemProvider::loop() {
   const uint waitTime = 50, updateTimeS = 120;
 
-  Consumer* cons = bufferSystemProvider.getConsumer();
+  Consumer* cons = g_bufferSystemProvider->getConsumer();
   if (cons == nullptr || !cons->isReady()) return waitTime;
   uint32_t uptime = Host::uptimeSec32();
   if (!forceSystemReport && lastSystemReport >= cons->readyTime() && lastSystemReport + updateTimeS > uptime) return waitTime; // no report is needed yet
@@ -59,27 +59,27 @@ uint SystemProvider::loop() {
 
   // Generate discovery only once per connection
   int sum = systemUpdate(nullptr, uptime);
-  for (Provider* p = systemHead; p != nullptr; p = p->systemNext)
+  for (Provider* p = _providerHead; p != nullptr; p = (Provider*)p->_objectNext)
     sum += p->systemUpdate(nullptr, uptime);
 
   if (lastSystemReport < cons->readyTime()) {
     sum += systemDiscovery(nullptr);
-    for (Provider* p = systemHead; p != nullptr; p = p->systemNext)
+    for (Provider* p = _providerHead; p != nullptr; p = (Provider*)p->_objectNext)
       sum += p->systemDiscovery(nullptr);
-    if (bufferSystemProvider.getFreeBlocks() < sum) return waitTime;
-    systemDiscovery(&bufferSystemProvider);
-    for (Provider* p = systemHead; p != nullptr; p = p->systemNext)
-      p->systemDiscovery(&bufferSystemProvider);
+    if (g_bufferSystemProvider->getFreeBlocks() < sum) return waitTime;
+    systemDiscovery(g_bufferSystemProvider);
+    for (Provider* p = _providerHead; p != nullptr; p = (Provider*)p->_objectNext)
+      p->systemDiscovery(g_bufferSystemProvider);
   } else {
-    if (bufferSystemProvider.getFreeBlocks() < sum) return waitTime;
+    if (g_bufferSystemProvider->getFreeBlocks() < sum) return waitTime;
   }
 
   lastSystemReport = uptime;
 
-  systemUpdate(&bufferSystemProvider, uptime);
-  for (Provider* p = systemHead; p != nullptr; p = p->systemNext)
-    p->systemUpdate(&bufferSystemProvider, uptime);
-  bufferSystemProvider.closeMessage();
+  systemUpdate(g_bufferSystemProvider, uptime);
+  for (Provider* p = _providerHead; p != nullptr; p = (Provider*)p->_objectNext)
+    p->systemUpdate(g_bufferSystemProvider, uptime);
+  g_bufferSystemProvider->closeMessage();
 
   return waitTime;
 }

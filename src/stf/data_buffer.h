@@ -34,11 +34,16 @@ enum EnumDataBlockElemSeparator {
 class Provider;
 class Consumer;
 
-class DataBuffer {
+class DataBuffer : public Object {
 public:
-  DataBuffer(DataBlock* buffer_, uint size);
+  DataBuffer(TaskRoot* task, DataBlock* buffer_, uint size);
 
-  void addProvider(Provider* provider_);
+  virtual void init() override;
+  virtual int initPriority() override;
+  virtual Object** getObjectHead();
+
+  void setupProviders();
+  uint loopProviders();
 
   uint getUsedBlocks();
   uint getFreeBlocks();
@@ -69,12 +74,11 @@ protected:
   DataBlock* buffer;
   uint size;
 
-  // List of providers
-  Provider* providerHead;
-  friend class Provider;
+  friend class TaskRoot;
+  TaskRoot* _parentTask;
 
   // List of buffers for the consumer
-  DataBuffer* bufferNext;
+  DataBuffer* consumerBufferNext;
   Consumer* parentConsumer;
   friend class Consumer;
 };
@@ -82,22 +86,22 @@ protected:
 template <uint size_>
 class StaticDataBuffer : public DataBuffer {
 public:
-  StaticDataBuffer() : DataBuffer(localBuffer, size_){};
+  StaticDataBuffer(TaskRoot* task) : DataBuffer(task, localBuffer, size_){};
 
 protected:
   DataBlock localBuffer[size_];
 };
 
-#define STF_BUFFER0(name, size) STF_BUFFER_DECLARE(name, size)
-#define STF_BUFFER1(name, size, provider) \
-  STF_BUFFER_DECLARE(name, size)          \
+#define STF_BUFFER0(name, size, task) STF_BUFFER_DECLARE(name, size, task)
+#define STF_BUFFER1(name, size, task, provider) \
+  STF_BUFFER_DECLARE(name, size, task)          \
   STF_BUFFER_PROVIDER(name, provider)
-#define STF_BUFFER2(name, size, provider1, provider2) \
-  STF_BUFFER_DECLARE(name, size)                      \
-  STF_BUFFER_PROVIDER(name, provider1)                \
+#define STF_BUFFER2(name, size, task, provider1, provider2) \
+  STF_BUFFER_DECLARE(name, size, task)                      \
+  STF_BUFFER_PROVIDER(name, provider1)                      \
   STF_BUFFER_PROVIDER(name, provider2)
-#define STF_BUFFER_DECLARE(name, size)      extern StaticDataBuffer<size> name;
-#define STF_BUFFER_PROVIDER(name, provider) extern DataBuffer& buffer##provider;
+#define STF_BUFFER_DECLARE(name, size, task) extern StaticDataBuffer<size> g_##name;
+#define STF_BUFFER_PROVIDER(name, provider)  constexpr DataBuffer* g_buffer##provider = &g_##name;
 STFBUFFERS;
 
 } // namespace stf

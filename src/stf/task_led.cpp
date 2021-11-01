@@ -77,7 +77,7 @@ public:
 };
 
 template <>
-const TaskDescriptor2 Task<LedTask>::_descriptor = {&_obj, "TestTask", 2048, 0, 1};
+const TaskDescriptor Task<LedTask>::_descriptor = {&_obj, "LedTask", 2048, 0, 1};
 template class Task<LedTask>;
 
 LedEvent LedTask::ledEvents[STFLED_MAXEVENTS];

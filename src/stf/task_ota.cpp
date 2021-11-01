@@ -55,10 +55,7 @@ void otaOnError(ota_error_t error_) {
   STFLOG_WARNING("OTA error [%u]: %s %s\n", error_, errorType != nullptr ? errorType : "Unknown", errorType != nullptr ? "failed" : "error");
 }
 
-extern DataBuffer& bufferSystemProvider; // this needs only for the IntelliSense, not for the compiler
-
-OTAProvider::OTAProvider() : Provider(&bufferSystemProvider) {
-  registerSystemUpdate();
+OTAProvider::OTAProvider() : Provider(g_bufferSystemProvider) {
   enabled = true;
 }
 

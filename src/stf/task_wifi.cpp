@@ -34,7 +34,15 @@
 
 namespace stf {
 
-DEFINE_STFTASK(Wifi, 2, 0, 0, nullptr)
+class NetTask : public Task<NetTask> {
+public:
+  virtual void setup() override;
+  virtual uint loop() override;
+};
+
+template <>
+const TaskDescriptor Task<NetTask>::_descriptor = {&_obj, "NetTask", 0, 0, 2};
+template class Task<NetTask>;
 
 uint64_t wifiConnectionTime = 0;
 uint wifiConnectionTry = 0;
@@ -115,7 +123,7 @@ bool checkConnection() {
   return false;
 }
 
-void setupWifiTask(void*) {
+void NetTask::setup() {
 #  if STFWIFI_IOTWEBCONF == 1
   bool ap = checkForConfigAtSetup();
   IotWebConfWrapper::setup(ap);
@@ -125,7 +133,7 @@ void setupWifiTask(void*) {
 #  endif
 }
 
-uint32_t loopWifiTask(void*) {
+uint32_t NetTask::loop() {
   uint32_t toWait = 100;
 #  if STFWIFI_IOTWEBCONF == 1
   uint32_t toWaitConf = IotWebConfWrapper::loop();

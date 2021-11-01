@@ -20,28 +20,32 @@
 
 namespace stf {
 
-struct TaskDescriptor2;
+class DataBuffer;
+struct TaskDescriptor;
 
-class TaskRoot {
+class TaskRoot : public Object {
 public:
   TaskRoot();
   virtual ~TaskRoot();
   virtual void setup();
-  virtual uint loop() = 0;
+  virtual uint loop();
 
   //protected:
   TaskRoot(const TaskRoot&) = delete;
   TaskRoot& operator=(const TaskRoot&) = delete;
 
-  TaskHandle_t _handle;
-  const TaskDescriptor2* _descriptorPtr;
+  TaskHandle_t _handle = nullptr;
+  const TaskDescriptor* _descriptorPtr = nullptr;
+  TaskRoot* _next = nullptr;
+  DataBuffer* _bufferHead = nullptr;
 
-  void initTask(const TaskDescriptor2* descriptor);
-  static TaskRoot* _head;
-  TaskRoot* _next;
+  void initTask(const TaskDescriptor* descriptor);
+
   static int _count;
 
 protected:
+  static TaskRoot* _taskHead;
+
   static void setupTasks();
   static void loopTask(void* ptr);
   static uint loopTasks();
@@ -50,7 +54,7 @@ protected:
   friend void ::loop();
 };
 
-struct TaskDescriptor2 {
+struct TaskDescriptor {
   const TaskRoot* task;
   const char* taskName;
   uint32_t taskStackSize;
@@ -61,48 +65,36 @@ struct TaskDescriptor2 {
 template <class T>
 class Task : public TaskRoot {
 public:
-  inline Task() { initTask(&_descriptor); }
+  inline Task() {}
+
+  virtual void init();
   //protected:
   static T _obj;
-  static const TaskDescriptor2 _descriptor;
+  static const TaskDescriptor _descriptor;
 };
 
 template <class T>
 T Task<T>::_obj;
 
-typedef void (*TaskSetupFunction)(void*);
-typedef uint (*TaskLoopFunction)(void*);
+template <class T>
+void Task<T>::init() { initTask(&_descriptor); }
 
-struct TaskDescriptor {
-  TaskSetupFunction _funcSetup;
-  TaskLoopFunction _funcLoop;
-  void* _userPtr;
-
-  const char* _taskName;
-  uint _taskStackSize;
-  int _taskCore;
-
-  int _taskOrder;
+enum class EnumSimpleTask {
+  Main = 0,
 };
 
-class TaskRegister {
+template <EnumSimpleTask ID>
+class SimpleTask : public TaskRoot {
 public:
-  TaskRegister(const TaskDescriptor* descriptor_);
-
-  const TaskDescriptor* _descriptor;
-  TaskHandle_t _handle;
-  TaskRegister* _next;
-
-  static TaskRegister* _head;
+  virtual void init();
+  //protected:
+  static SimpleTask<ID> _obj;
+  static const TaskDescriptor _descriptor;
 };
 
-void task_setup();
-uint task_loop();
-
-#define DEFINE_STFTASK(name, order, core, stackSize, userPtr)                                                                  \
-  void setup##name##Task(void*);                                                                                               \
-  uint loop##name##Task(void*);                                                                                                \
-  const TaskDescriptor descriptor##name##Task = {setup##name##Task, loop##name##Task, userPtr, #name, stackSize, core, order}; \
-  TaskRegister register##name##Task(&descriptor##name##Task);
+template <EnumSimpleTask ID>
+SimpleTask<ID> SimpleTask<ID>::_obj;
+template <EnumSimpleTask ID>
+void SimpleTask<ID>::init() { initTask(&_descriptor); }
 
 } // namespace stf

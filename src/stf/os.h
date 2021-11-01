@@ -25,7 +25,8 @@
 #include <stf/settings.h>
 #include <stf/device_info.h>
 
-#define STFATTR_PACKED __attribute__((packed))
+#define STFATTR_PACKED         __attribute__((packed))
+#define STFATTR_INIT(priority) __attribute__((init_priority(priority)))
 
 namespace stf {
 
