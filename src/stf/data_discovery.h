@@ -36,33 +36,42 @@ enum EnumDiscoveryComponent {
   edcSwitch = 2,
 };
 
+enum EnumEntityCategory {
+  eecPrimary = 0,
+  eecConfig = 1,
+  eecDiagnostic = 2,
+  eecSystem = 3
+};
+
 struct DiscoveryBlock {
   EnumDataField _field : 8;
   EnumDiscoveryComponent _component : 4;
+  EnumEntityCategory _category : 4;
   const char* _name;
   const char* _measure;
   const char* _device_class;
 };
 
-namespace Discovery {
+class Discovery {
+public:
+  // Device info should be added independently...
+  static uint addBlocks(DataBuffer* buffer, uint8_t topic, const DiscoveryBlock** list, EnumExtraInfo cacheCmd = eeiNone, const void* cacheValue = nullptr, const char* device_name = nullptr, const char* device_model = nullptr, const char* device_manufacturer = nullptr, const char* device_sw = nullptr);
 
-extern const char* topicConfigComponent[];
+  static void generateBlocks(DataFeeder& feeder, const DataBlock& generatorBlock, DataCache& cache);
+  static void generateBlock(DataFeeder& feeder, const DataBlock& generatorBlock, DataCache& cache, const DiscoveryBlock& discovery);
 
-// Device info should be added independently...
-uint addDiscoveryBlocks(DataBuffer* buffer, uint8_t topic, const DiscoveryBlock** list, EnumExtraInfo cacheCmd = eeiNone, const void* cacheValue = nullptr, const char* device_name = nullptr, const char* device_model = nullptr, const char* device_manufacturer = nullptr, const char* device_sw = nullptr);
+  static const DiscoveryBlock _Temperature_C;
+  static const DiscoveryBlock _Humidity;
+  static const DiscoveryBlock _Battery;
+  static const DiscoveryBlock _Volt;
+  static const DiscoveryBlock _Uptime_S;
+  static const DiscoveryBlock _Uptime_D;
+  static const DiscoveryBlock _Free_Memory;
 
-void generateDiscoveryBlocks(DataFeeder& feeder, const DataBlock& generatorBlock, DataCache& cache);
-void generateDiscoveryBlock(DataFeeder& feeder, const DataBlock& generatorBlock, DataCache& cache, const DiscoveryBlock& discovery);
+  static const DiscoveryBlock* _listVoltBattHumTempC[];
 
-extern const DiscoveryBlock _Temperature_C;
-extern const DiscoveryBlock _Humidity;
-extern const DiscoveryBlock _Battery;
-extern const DiscoveryBlock _Volt;
-extern const DiscoveryBlock _Uptime_S;
-extern const DiscoveryBlock _Uptime_D;
-extern const DiscoveryBlock _Free_Memory;
+  static const char* _topicConfigComponent[];
+  static const char* _entityCategory[];
+};
 
-extern const DiscoveryBlock* _listVoltBattHumTempC[];
-
-} // namespace Discovery
 } // namespace stf

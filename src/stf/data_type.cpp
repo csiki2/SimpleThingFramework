@@ -52,7 +52,7 @@ int DataType::fnDTTopic(char* buffer, uint len, const DataBlock& block, DataCach
       resLen = snprintf(buffer, len, "home/%s/%stoMQTT/%s", Host::_name, _topicNames[topicIndex], cache._device.info.strId);
       break;
     case etitConfig:
-      resLen = snprintf(buffer, len, "homeassistant/%s/%s_%s/config", Discovery::topicConfigComponent[topicIndex], cache._device.info.strMAC, DataField::_list[cache._block_device._field]);
+      resLen = snprintf(buffer, len, "homeassistant/%s/%s_%s/config", Discovery::_topicConfigComponent[topicIndex], cache._device.info.strMAC, DataField::_list[cache._block_device._field]);
       break;
     case etitState:
       resLen = snprintf(buffer, len, "+/+/%stoMQTT/%s", _topicNames[topicIndex], cache._device.info.strId);
@@ -95,7 +95,7 @@ int DataType::fnDTDevice(char* buffer, uint len, const DataBlock& block, DataCac
       resLen += res;
     }
   }
-  if (!cache._device.info.cmpMAC(Host::_info)) {
+  if ((typeInfo & etidIdentifiersCached) != 0 && !cache._device.info.cmpMAC(Host::_info)) {
     int res = snprintf(buffer + resLen, len - resLen, "%s\"via_device\":\"%s\"", resLen != 0 ? "," : "", Host::_info.strId);
     if (res < 0) return res;
     resLen += res;

@@ -30,7 +30,7 @@ SystemProvider::SystemProvider() : Provider(g_bufferSystemProvider), _lastSystem
 
 const DiscoveryBlock* SystemProvider::_listSystem[] = {&Discovery::_Uptime_S, &Discovery::_Uptime_D, &Discovery::_Free_Memory, nullptr};
 uint SystemProvider::systemDiscovery(DataBuffer* systemBuffer) {
-  uint res = Discovery::addDiscoveryBlocks(systemBuffer, etitSYS, _listSystem, eeiNone, nullptr, Host::_name, "Test", "community", "0.01");
+  uint res = Discovery::addBlocks(systemBuffer, etitSYS, _listSystem, eeiNone, nullptr, Host::_name, "Test", "community", "0.01");
   return res;
 }
 
@@ -58,7 +58,7 @@ uint SystemProvider::loop() {
   _forceSystemReport = false;
 
   // Generate discovery only once per connection
-  int sum = systemUpdate(nullptr, uptime);
+  int sum = 0;
   for (Provider* p = _providerHead; p != nullptr; p = (Provider*)p->_objectNext)
     sum += p->systemUpdate(nullptr, uptime);
 
@@ -76,7 +76,6 @@ uint SystemProvider::loop() {
 
   _lastSystemReport = uptime;
 
-  systemUpdate(g_bufferSystemProvider, uptime);
   for (Provider* p = _providerHead; p != nullptr; p = (Provider*)p->_objectNext)
     p->systemUpdate(g_bufferSystemProvider, uptime);
   g_bufferSystemProvider->closeMessage();

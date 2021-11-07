@@ -23,9 +23,7 @@
 
 namespace stf {
 
-namespace Discovery {
-
-uint addDiscoveryBlocks(DataBuffer* buffer, uint8_t topic, const DiscoveryBlock** list, EnumExtraInfo cacheCmd, const void* cacheValue, const char* device_name, const char* device_model, const char* device_manufacturer, const char* device_sw) {
+uint Discovery::addBlocks(DataBuffer* buffer, uint8_t topic, const DiscoveryBlock** list, EnumExtraInfo cacheCmd, const void* cacheValue, const char* device_name, const char* device_model, const char* device_manufacturer, const char* device_sw) {
   bool bl1 = device_name != nullptr || device_model != nullptr;
   bool bl2 = device_manufacturer != nullptr || device_sw != nullptr;
   uint need = (bl1 ? 1 : 0) + (bl2 ? 1 : 0) + (cacheCmd != 0 ? 1 : 0) + 1;
@@ -45,11 +43,11 @@ uint addDiscoveryBlocks(DataBuffer* buffer, uint8_t topic, const DiscoveryBlock*
 
   if (bl1) buffer->nextToWrite(edf__none, edt_None, 0, eeiCacheBlock1).setPtr(device_name, device_model);
   if (bl2) buffer->nextToWrite(edf__none, edt_None, 0, eeiCacheBlock2).setPtr(device_manufacturer, device_sw);
-  buffer->nextToWrite(edf__discList, edt_Generator, topic).setPtr((const void*)&generateDiscoveryBlocks, (void*)list).closeMessage();
+  buffer->nextToWrite(edf__discList, edt_Generator, topic).setPtr((const void*)&generateBlocks, (void*)list).closeMessage();
   return 0;
 }
 
-void generateDiscoveryBlock(DataFeeder& feeder, const DataBlock& generatorBlock, DataCache& cache, const DiscoveryBlock& discovery) {
+void Discovery::generateBlock(DataFeeder& feeder, const DataBlock& generatorBlock, DataCache& cache, const DiscoveryBlock& discovery) {
   if ((generatorBlock._extra & eeiCacheMask) == eeiCacheDeviceHost)
     feeder.nextToWrite(discovery._field, edt_None, eeiCacheDeviceHost).setPtr(&Host::_info);
   else
@@ -69,43 +67,54 @@ void generateDiscoveryBlock(DataFeeder& feeder, const DataBlock& generatorBlock,
     bool useName = strcmp(discovery._device_class, "_") == 0;
     feeder.nextToWrite(edf_device_class, edt_String, etisSource0Ptr + (useName ? etisCaseLower : 0)).setPtr((void*)useName ? discovery._name : discovery._device_class);
   }
+  if (discovery._category != eecPrimary) feeder.nextToWrite(edf_entity_category, edt_String, etisSource0Ptr).setPtr(_entityCategory[discovery._category]);
   feeder.nextToWrite(edf_value_template, edt_String, etisSource0FmtPtr + etisSource1CacheField).setPtr("{{ value_json.%s | is_defined }}");
-  feeder.nextToWrite(edf_device, edt_Device, etidSource0Name + etidSource1Model + etidConnectionsCached + etidIdentifiersCached)._value = cache._block1._value;
-  DataBlock& devCnt = feeder.nextToWrite(edf_device, edt_Device, etidSource0Manufacturer + etidSource1SWVersion);
-  devCnt._value = cache._block2._value;
-  devCnt._closeComplexFlag = 1;
+  DataBlock& dev1 = feeder.nextToWrite(edf_device, edt_Device, etidSource0Name + etidSource1Model + etidConnectionsCached + etidIdentifiersCached);
+  dev1._value = cache._block1._value;
+  if (cache._block2._value.tPtr[0] != nullptr || cache._block2._value.tPtr[1] != nullptr) {
+    DataBlock& dev2 = feeder.nextToWrite(edf_device, edt_Device, etidSource0Manufacturer + etidSource1SWVersion);
+    dev2._value = cache._block2._value;
+    dev2._closeComplexFlag = 1;
+  } else {
+    dev1._closeComplexFlag = 1;
+  }
   feeder.nextToWrite(edf_platform, edt_String, etisSource0Ptr).setPtr("mqtt").closeMessage();
 }
 
-void generateDiscoveryBlocks(DataFeeder& feeder, const DataBlock& generatorBlock, DataCache& cache) {
+void Discovery::generateBlocks(DataFeeder& feeder, const DataBlock& generatorBlock, DataCache& cache) {
   EnumDataField field = generatorBlock._field;
   if (field != edf__discElem && field != edf__discList) return;
 
   if (!cache._flagDevice) cache.addBlock(generatorBlock, eeiCacheDeviceMainHost);
   if (field == edf__discList) {
     const DiscoveryBlock** list = (const DiscoveryBlock**)generatorBlock._value.tPtr[1];
-    for (int idx = 0; *list != nullptr; list++, idx++) generateDiscoveryBlock(feeder, generatorBlock, cache, **list);
+    for (int idx = 0; *list != nullptr; list++, idx++) generateBlock(feeder, generatorBlock, cache, **list);
   } else {
-    generateDiscoveryBlock(feeder, generatorBlock, cache, *(const DiscoveryBlock*)generatorBlock._value.tPtr[1]);
+    generateBlock(feeder, generatorBlock, cache, *(const DiscoveryBlock*)generatorBlock._value.tPtr[1]);
   }
 }
 
-const DiscoveryBlock _Temperature_C = {edf_tempc, edcSensor, "Temperature", "°C", "_"};
-const DiscoveryBlock _Humidity = {edf_hum, edcSensor, "Humidity", "%", "_"};
-const DiscoveryBlock _Battery = {edf_batt, edcSensor, "Battery", "%", "_"};
-const DiscoveryBlock _Volt = {edf_volt, edcSensor, nullptr, "V", nullptr};
-const DiscoveryBlock _Uptime_S = {edf_uptime_s, edcSensor, "Uptime", "s", nullptr};
-const DiscoveryBlock _Uptime_D = {edf_uptime_d, edcSensor, "Uptime", "d", nullptr};
-const DiscoveryBlock _Free_Memory = {edf_free_memory, edcSensor, nullptr, "B", nullptr};
+const DiscoveryBlock Discovery::_Temperature_C = {edf_tempc, edcSensor, eecPrimary, "Temperature", "°C", "_"};
+const DiscoveryBlock Discovery::_Humidity = {edf_hum, edcSensor, eecPrimary, "Humidity", "%", "_"};
+const DiscoveryBlock Discovery::_Battery = {edf_batt, edcSensor, eecDiagnostic, "Battery", "%", "_"};
+const DiscoveryBlock Discovery::_Volt = {edf_volt, edcSensor, eecDiagnostic, nullptr, "V", nullptr};
+const DiscoveryBlock Discovery::_Uptime_S = {edf_uptime_s, edcSensor, eecDiagnostic, "Uptime", "s", nullptr};
+const DiscoveryBlock Discovery::_Uptime_D = {edf_uptime_d, edcSensor, eecDiagnostic, "Uptime", "d", nullptr};
+const DiscoveryBlock Discovery::_Free_Memory = {edf_free_memory, edcSensor, eecDiagnostic, nullptr, "B", nullptr};
 
-const DiscoveryBlock* _listVoltBattHumTempC[] = {&Discovery::_Volt, &Discovery::_Battery, &Discovery::_Humidity, &Discovery::_Temperature_C, nullptr};
+const DiscoveryBlock* Discovery::_listVoltBattHumTempC[] = {&Discovery::_Volt, &Discovery::_Battery, &Discovery::_Humidity, &Discovery::_Temperature_C, nullptr};
 
-const char* topicConfigComponent[] = {
+const char* Discovery::_topicConfigComponent[] = {
     "sensor", // edcSensor
     "binary_sensor", // edcBinarySensor
     "switch", // edcSwitch
 };
 
-} // namespace Discovery
+const char* Discovery::_entityCategory[] = {
+    "primary", // eecPrimary
+    "config", // eecConfig
+    "diagnostic", // eecDiagnostic
+    "system", // eecSystem
+};
 
 } // namespace stf

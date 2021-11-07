@@ -50,11 +50,11 @@ uint32_t OTAProvider::loop() {
   return toWait;
 }
 
-const DiscoveryBlock OTAProvider::_switch = {edf_ota, edcSwitch, "OTA", nullptr, nullptr};
+const DiscoveryBlock OTAProvider::_switch = {edf_ota, edcSwitch, eecConfig, "OTA", nullptr, nullptr};
 const DiscoveryBlock* OTAProvider::_listSystem[] = {&_switch, nullptr};
 
 uint OTAProvider::systemDiscovery(DataBuffer* systemBuffer_) {
-  uint res = Discovery::addDiscoveryBlocks(systemBuffer_, etitSYS, _listSystem);
+  uint res = Discovery::addBlocks(systemBuffer_, etitSYS, _listSystem);
   return res;
 }
 

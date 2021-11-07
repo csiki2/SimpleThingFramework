@@ -189,12 +189,12 @@ uint BTProvider::loop() {
   return 50;
 }
 
-const DiscoveryBlock BTProvider::_received = {edf_bt_scanned, edcSensor, "BT Packets Scanned", "Hz", nullptr};
-const DiscoveryBlock BTProvider::_transmitted = {edf_bt_forwarded, edcSensor, "BT Packets Forwarded", "Hz", nullptr};
+const DiscoveryBlock BTProvider::_received = {edf_bt_scanned, edcSensor, eecDiagnostic, "BT Packets Scanned", "Hz", nullptr};
+const DiscoveryBlock BTProvider::_transmitted = {edf_bt_forwarded, edcSensor, eecDiagnostic, "BT Packets Forwarded", "Hz", nullptr};
 const DiscoveryBlock* BTProvider::_listSystem[] = {&_received, &_transmitted, nullptr};
 
 uint BTProvider::systemDiscovery(DataBuffer* systemBuffer) {
-  uint res = Discovery::addDiscoveryBlocks(systemBuffer, etitSYS, _listSystem);
+  uint res = Discovery::addBlocks(systemBuffer, etitSYS, _listSystem);
   return res;
 }
 

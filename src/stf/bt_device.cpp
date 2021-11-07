@@ -45,7 +45,7 @@ int32_t BTResolver::getBufferValue(const uint8_t* buffer, uint8_t size) {
 uint BTResolver::addDiscoveryBlocks(DataBuffer& buffer, const DiscoveryBlock** list, const uint8_t* mac, const char* deviceName, const char* deviceModel, const char* deviceManufacturer, const char* deviceSW) {
   BTDevice* dev = BTProvider::_discoveryList.findOrCreateDevice(mac);
   if (dev == nullptr || dev->_discovery) return 0;
-  uint res = Discovery::addDiscoveryBlocks(&buffer, etitBT, list, eeiCacheDeviceMAC48, mac, deviceName, deviceModel, deviceManufacturer, deviceSW);
+  uint res = Discovery::addBlocks(&buffer, etitBT, list, eeiCacheDeviceMAC48, mac, deviceName, deviceModel, deviceManufacturer, deviceSW);
   if (res == 0) dev->_discovery = true;
   return res;
 }
