@@ -38,7 +38,6 @@ public:
   OTAProvider();
 
   uint loop() override;
-  void setup() override;
   uint systemDiscovery(DataBuffer* systemBuffer) override;
   uint systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS) override;
   void feedback(const FeedbackInfo& info) override;
@@ -49,7 +48,9 @@ protected:
   static void onProgress(unsigned progress, unsigned total);
   static void onError(ota_error_t error);
 
-  bool enabled;
+  bool _enabled = false;
+
+  ArduinoOTAClass* _arduinoOTA = nullptr;
 
   static const DiscoveryBlock _switch;
   static const DiscoveryBlock* _listSystem[];

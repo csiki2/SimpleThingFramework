@@ -28,23 +28,23 @@ namespace stf {
 DEFINE_PROVIDERTASK(OTAProvider, 3, 0, 0)
 
 OTAProvider::OTAProvider() : Provider(g_bufferSystemProvider) {
-  enabled = true;
-}
-
-void OTAProvider::setup() {
-  ArduinoOTA.setHostname(Host::_name).setPort(STFOTA_PORT).setPassword(Host::_password);
-  ArduinoOTA.onStart(onStart).onEnd(onEnd).onProgress(onProgress).onError(onError);
 }
 
 uint32_t OTAProvider::loop() {
   uint32_t toWait = 100;
-  if (WiFi.isConnected()) {
-    static bool otaInit = false;
-    if (!otaInit) {
-      ArduinoOTA.begin();
-      otaInit = true;
-    } else {
-      ArduinoOTA.handle();
+  if (WiFi.isConnected() && _enabled) {
+    if (_arduinoOTA == nullptr) {
+      _arduinoOTA = new ArduinoOTAClass;
+      _arduinoOTA->setHostname(Host::_name).setPort(STFOTA_PORT).setPassword(Host::_password);
+      _arduinoOTA->onStart(onStart).onEnd(onEnd).onProgress(onProgress).onError(onError);
+      _arduinoOTA->begin();
+    }
+    _arduinoOTA->handle();
+  } else {
+    if (_arduinoOTA != nullptr) {
+      _arduinoOTA->end();
+      delete _arduinoOTA;
+      _arduinoOTA = nullptr;
     }
   }
   return toWait;
@@ -60,16 +60,16 @@ uint OTAProvider::systemDiscovery(DataBuffer* systemBuffer_) {
 
 uint OTAProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS) {
   if (systemBuffer == nullptr) return 1;
-  systemBuffer->nextToWrite(edf_ota, edt_String, etisSource0Ptr).setPtr(enabled ? "ON" : "OFF");
+  systemBuffer->nextToWrite(edf_ota, edt_String, etisSource0Ptr).setPtr(_enabled ? "ON" : "OFF");
   return 0;
 }
 
 void OTAProvider::feedback(const FeedbackInfo& info) {
   if (info.fieldEnum == edf_ota) {
     bool set = info.payloadLength == 2 && strncmp((const char*)info.payload, "ON", 2) == 0;
-    STFLOG_INFO("OTA command detected %u - %*.*s\n", enabled, info.payloadLength, info.payloadLength, info.payload);
-    if (set != enabled) {
-      enabled = set;
+    STFLOG_INFO("OTA command detected %u - %*.*s\n", _enabled, info.payloadLength, info.payloadLength, info.payload);
+    if (set != _enabled) {
+      _enabled = set;
       SystemProvider::requestReport();
     }
   }
