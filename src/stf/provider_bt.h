@@ -32,8 +32,8 @@ public:
 
   uint loop() override;
   void setup() override;
-  uint systemDiscovery(DataBuffer* systemBuffer) override;
-  uint systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS) override;
+
+  uint systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESystemMessageType type) override;
 
   static double beaconDistance(int rssi, int txPower);
   static void generateBTBlocks(DataFeeder& feeder, const DataBlock& generatorBlock, DataCache& cache);

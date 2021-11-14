@@ -94,9 +94,9 @@ uint32_t MQTTConsumer::loop() {
 bool MQTTConsumer::isReady() { return _client.connected(); }
 uint32_t MQTTConsumer::readyTime() { return _connectionTime; }
 
-bool MQTTConsumer::send(JsonBuffer& jsonBuffer_) {
+bool MQTTConsumer::send(JsonBuffer& jsonBuffer, bool retain) {
   //return false;
-  return _client.publish(jsonBuffer_._buffer + jsonBuffer_._jsonSize, jsonBuffer_._buffer, jsonBuffer_._pos);
+  return _client.publish(jsonBuffer._buffer + jsonBuffer._jsonSize, (const uint8_t*)jsonBuffer._buffer, jsonBuffer._pos, retain);
 }
 
 } // namespace stf

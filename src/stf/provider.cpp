@@ -56,11 +56,7 @@ bool Provider::isConsumerReady() const {
   return cons != nullptr && cons->isReady();
 }
 
-uint Provider::systemDiscovery(DataBuffer* systemBuffer) {
-  return 0;
-}
-
-uint Provider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS) {
+uint Provider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESystemMessageType type) {
   return 0;
 }
 
@@ -85,7 +81,7 @@ DataBuffer* Consumer::getNextBuffer(DataBuffer* buffer) {
   return buffer != nullptr ? buffer->_consumerBufferNext : nullptr;
 }
 
-bool Consumer::send(JsonBuffer& jsonBuffer) {
+bool Consumer::send(JsonBuffer& jsonBuffer, bool retain) {
   return false;
 }
 
@@ -95,9 +91,9 @@ bool Consumer::onCloseMessageEvent(JsonBuffer& jsonBuffer, DataCache& cache) {
   bool res = false;
   if (jsonBuffer.isValid()) {
     // res = false;
-    res = send(jsonBuffer);
+    res = send(jsonBuffer, cache._flagRetain);
     if (res) _messageSent++;
-    STFLOG_INFO("Sending MQTT message (%s) %s.\n", jsonBuffer._buffer + jsonBuffer._jsonSize, res ? "succeeded" : "failed");
+    STFLOG_INFO("Sending %s MQTT message (%s) %s.\n", cache._flagRetain ? "retained" : "", jsonBuffer._buffer + jsonBuffer._jsonSize, res ? "succeeded" : "failed");
   } else {
     STFLOG_INFO("Invalid MQTT message.\n");
   }

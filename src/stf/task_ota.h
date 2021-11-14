@@ -38,8 +38,7 @@ public:
   OTAProvider();
 
   uint loop() override;
-  uint systemDiscovery(DataBuffer* systemBuffer) override;
-  uint systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS) override;
+  uint systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESystemMessageType type) override;
   void feedback(const FeedbackInfo& info) override;
 
 protected:

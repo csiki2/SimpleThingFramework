@@ -46,6 +46,14 @@ struct FeedbackInfo {
   uint macLen;
 };
 
+enum class ESystemMessageType : uint8_t {
+  None = 0,
+  Discovery = 1,
+  Normal = 2,
+  Retained = 4,
+  All = 7
+};
+
 // The provider feeds data into the buffer
 // Since the buffer is a lockless queue all provider for the same buffer must run on the same task
 class Provider : public Object {
@@ -58,8 +66,7 @@ public:
 
   virtual void setup();
   virtual uint loop() = 0;
-  virtual uint systemDiscovery(DataBuffer* systemBuffer);
-  virtual uint systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS);
+  virtual uint systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESystemMessageType type);
   virtual void feedback(const FeedbackInfo& info);
 
   bool isConsumerReady() const;
@@ -94,7 +101,7 @@ public:
 protected:
   virtual void consumeBuffers(JsonBuffer& jsonBuffer);
   int consumeBuffer(JsonBuffer& jsonBuffer, DataBuffer* buffer);
-  virtual bool send(JsonBuffer& jsonBuffer);
+  virtual bool send(JsonBuffer& jsonBuffer, bool retain);
 
   void broadcastFeedback(const FeedbackInfo& info);
 

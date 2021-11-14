@@ -42,7 +42,7 @@ public:
 
 protected:
   MQTTConsumer();
-  bool send(JsonBuffer& jsonBuffer) override;
+  bool send(JsonBuffer& jsonBuffer, bool retain) override;
 
   static void callback(char* topic, byte* payload, unsigned int length);
 

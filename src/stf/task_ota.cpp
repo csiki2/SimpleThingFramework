@@ -53,15 +53,23 @@ uint32_t OTAProvider::loop() {
 const DiscoveryBlock OTAProvider::_switch = {edf_ota, edcSwitch, eecConfig, "OTA", nullptr, nullptr};
 const DiscoveryBlock* OTAProvider::_listSystem[] = {&_switch, nullptr};
 
-uint OTAProvider::systemDiscovery(DataBuffer* systemBuffer_) {
-  uint res = Discovery::addBlocks(systemBuffer_, etitSYS, _listSystem);
+uint OTAProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESystemMessageType type) {
+  uint res = 0;
+  switch (type) {
+    case ESystemMessageType::Discovery:
+      res = Discovery::addBlocks(systemBuffer, etitSYS, _listSystem);
+      break;
+    case ESystemMessageType::Normal:
+      res = 1;
+      if (systemBuffer != nullptr && systemBuffer->getFreeBlocks() >= res) {
+        systemBuffer->nextToWrite(edf_ota, edt_String, etisSource0Ptr).setPtr(_enabled ? "ON" : "OFF");
+        res = 0;
+      }
+      break;
+    default:
+      break;
+  }
   return res;
-}
-
-uint OTAProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS) {
-  if (systemBuffer == nullptr) return 1;
-  systemBuffer->nextToWrite(edf_ota, edt_String, etisSource0Ptr).setPtr(_enabled ? "ON" : "OFF");
-  return 0;
 }
 
 void OTAProvider::feedback(const FeedbackInfo& info) {

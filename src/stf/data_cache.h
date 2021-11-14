@@ -30,6 +30,7 @@ struct DataCache {
   DataBlock _block_device;
   DeviceBlock _device;
 
+  bool _flagRetain : 1;
   bool _flagDevice : 1;
   bool _flagBlock1 : 1;
   bool _flagBlock2 : 1;
@@ -47,7 +48,7 @@ struct DataCache {
     if (_flagBlock1) _block1.reset();
     if (_flagBlock2) _block2.reset();
 
-    _flagDevice = _flagBlock1 = _flagBlock2 = false;
+    _flagRetain = _flagDevice = _flagBlock1 = _flagBlock2 = false;
   }
 
   inline void forceReset() {
@@ -56,7 +57,7 @@ struct DataCache {
     _block2.reset();
     _block_device.reset();
     _device.reset();
-    _flagDevice = _flagBlock1 = _flagBlock2 = _flagHeadElem = _flagFeederActive = false;
+    _flagRetain = _flagDevice = _flagBlock1 = _flagBlock2 = _flagHeadElem = _flagFeederActive = false;
   }
 
   inline void setHeadElem(const DataBlock& block) {

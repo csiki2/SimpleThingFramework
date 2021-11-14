@@ -193,19 +193,27 @@ const DiscoveryBlock BTProvider::_received = {edf_bt_scanned, edcSensor, eecDiag
 const DiscoveryBlock BTProvider::_transmitted = {edf_bt_forwarded, edcSensor, eecDiagnostic, "BT Packets Forwarded", "Hz", nullptr};
 const DiscoveryBlock* BTProvider::_listSystem[] = {&_received, &_transmitted, nullptr};
 
-uint BTProvider::systemDiscovery(DataBuffer* systemBuffer) {
-  uint res = Discovery::addBlocks(systemBuffer, etitSYS, _listSystem);
+uint BTProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESystemMessageType type) {
+  uint res = 0;
+  switch (type) {
+    case ESystemMessageType::Discovery:
+      res = Discovery::addBlocks(systemBuffer, etitSYS, _listSystem);
+      break;
+    case ESystemMessageType::Normal:
+      res = 2;
+      if (systemBuffer != nullptr && systemBuffer->getFreeBlocks() >= res) {
+        float ellapsed = uptimeS == _packetLastReset ? 0.1f : (uptimeS - _packetLastReset);
+        systemBuffer->nextToWrite(edf_bt_scanned, edt_Float, 3).setFloat(_packetsScanned / ellapsed);
+        systemBuffer->nextToWrite(edf_bt_forwarded, edt_Float, 3).setFloat(_packetsForwarded / ellapsed);
+        _packetsScanned = _packetsForwarded = 0; // we have a very low chance to lose 1 packet from the statistics due to concurrency, that's ok
+        _packetLastReset = uptimeS;
+        res = 0;
+      }
+      break;
+    default:
+      break;
+  }
   return res;
-}
-
-uint BTProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS) {
-  if (systemBuffer == nullptr) return 2;
-  float ellapsed = uptimeS == _packetLastReset ? 0.1f : (uptimeS - _packetLastReset);
-  systemBuffer->nextToWrite(edf_bt_scanned, edt_Float, 3).setFloat(_packetsScanned / ellapsed);
-  systemBuffer->nextToWrite(edf_bt_forwarded, edt_Float, 3).setFloat(_packetsForwarded / ellapsed);
-  _packetsScanned = _packetsForwarded = 0; // we have a very low chance to lose 1 packet from the statistics due to concurrency, that's ok
-  _packetLastReset = uptimeS;
-  return 0;
 }
 
 } // namespace stf

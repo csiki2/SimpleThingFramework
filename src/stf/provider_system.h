@@ -30,16 +30,18 @@ public:
   SystemProvider();
 
   uint loop() override;
-  uint systemDiscovery(DataBuffer* systemBuffer) override;
-  uint systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS) override;
+  uint systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESystemMessageType type) override;
 
   static void requestReport();
 
   static const DiscoveryBlock* _listSystem[];
 
 protected:
-  uint32_t _lastSystemReport;
-  bool _forceSystemReport;
+  bool generateSystemReport(DataBuffer* systemBuffer, uint32_t uptimeS, ESystemMessageType type);
+
+  uint32_t _lastSystemReportTime = 0;
+  ESystemMessageType _lastSystemReportSuccess = ESystemMessageType::None;
+  bool _forceSystemReport = false;
 };
 
 } // namespace stf
