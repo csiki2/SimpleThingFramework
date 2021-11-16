@@ -28,6 +28,7 @@ namespace stf {
 
 const char* DataType::_topicNames[] = {
     "SYS", // etitSYS
+    "SYSR", // etitSYSR
     "BT", // etitBT
 };
 
@@ -63,6 +64,7 @@ int DataType::fnDTTopic(char* buffer, uint len, const DataBlock& block, DataCach
     default:
       break;
   }
+  cache._flagRetain = (block._typeInfo & etitRetain) != 0;
   return resLen;
 }
 

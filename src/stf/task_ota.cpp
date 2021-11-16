@@ -57,9 +57,9 @@ uint OTAProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESyst
   uint res = 0;
   switch (type) {
     case ESystemMessageType::Discovery:
-      res = Discovery::addBlocks(systemBuffer, etitSYS, _listSystem);
+      res = Discovery::addBlocks(systemBuffer, etitSYSR, _listSystem);
       break;
-    case ESystemMessageType::Normal:
+    case ESystemMessageType::Retained:
       res = 1;
       if (systemBuffer != nullptr && systemBuffer->getFreeBlocks() >= res) {
         systemBuffer->nextToWrite(edf_ota, edt_String, etisSource0Ptr).setPtr(_enabled ? "ON" : "OFF");
@@ -75,10 +75,10 @@ uint OTAProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESyst
 void OTAProvider::feedback(const FeedbackInfo& info) {
   if (info.fieldEnum == edf_ota) {
     bool set = info.payloadLength == 2 && strncmp((const char*)info.payload, "ON", 2) == 0;
-    STFLOG_INFO("OTA command detected %u - %*.*s\n", _enabled, info.payloadLength, info.payloadLength, info.payload);
+    STFLOG_INFO("OTA command detected %u - %*.*s - %s\n", set, info.payloadLength, info.payloadLength, info.payload, set != _enabled ? "report request" : "no change");
     if (set != _enabled) {
       _enabled = set;
-      SystemProvider::requestReport();
+      SystemProvider::requestRetainedReport();
     }
   }
 }

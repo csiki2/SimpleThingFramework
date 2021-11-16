@@ -32,16 +32,17 @@ public:
   uint loop() override;
   uint systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESystemMessageType type) override;
 
-  static void requestReport();
+  static void requestRetainedReport();
 
-  static const DiscoveryBlock* _listSystem[];
+  static const DiscoveryBlock* _listSystemNormal[];
+  static const DiscoveryBlock* _listSystemRetained[];
 
 protected:
   bool generateSystemReport(DataBuffer* systemBuffer, uint32_t uptimeS, ESystemMessageType type);
 
   uint32_t _lastSystemReportTime = 0;
-  ESystemMessageType _lastSystemReportSuccess = ESystemMessageType::None;
-  bool _forceSystemReport = false;
+  ESystemMessageType _reportRequired = ESystemMessageType::None;
+  bool _forceSystemRetainedReport = false;
 };
 
 } // namespace stf

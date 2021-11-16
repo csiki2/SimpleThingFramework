@@ -44,4 +44,16 @@ int Helper::getArrayIndex(const char* str, uint strLen, const char* arr[], uint 
   return -1;
 }
 
+const char* Helper::strchr(const char* strB, const char* strE, const char fnd) {
+  for (; strB < strE; strB++)
+    if (*strB == fnd) return strB;
+  return nullptr;
+}
+
+const char* Helper::stranychr(const char* strB, const char* strE, const char* fnd) {
+  for (; strB < strE; strB++)
+    if (::strchr(fnd, *strB) != nullptr) return strB;
+  return nullptr;
+}
+
 } // namespace stf

@@ -30,20 +30,27 @@ namespace stf {
 MQTTConsumer MQTTConsumer::_obj;
 
 MQTTConsumer::MQTTConsumer() : _client(_wifiClient) {
-  _connectionTime = 0;
-  _connectionTry = 0;
 }
 
 void MQTTConsumer::callback(char* topic, byte* payload, unsigned int length) {
+  _obj._messageArrived = 1;
   FeedbackInfo info;
   info.set(topic, payload, length);
-  STFLOG_INFO("Received MQTT message (%s) [%*.*s|%*.*s|%s][%d|%d] - %*.*s\n", topic,
-              info.topicStrLen, info.topicStrLen, info.topicStr,
-              info.idStrLen, info.idStrLen, info.idStr,
-              info.fieldStr,
-              info.topicEnum, info.fieldEnum,
-              length, length, payload);
-  _obj.broadcastFeedback(info);
+
+  for (bool send = !info.retained;;) {
+    STFLOG_INFO("%10llu Received MQTT message (%s) [%*.*s|%*.*s|%*.*s][%d|%d] - %*.*s\n",
+                Host::uptimeMS64(),
+                topic,
+                info.topicStrLen, info.topicStrLen, info.topicStr,
+                info.idStrLen, info.idStrLen, info.idStr,
+                info.fieldStrLen, info.fieldStrLen, info.fieldStr,
+                info.topicEnum, info.fieldEnum,
+                length, length, payload);
+    if (send) _obj.broadcastFeedback(info);
+    if (!(send = info.next())) break;
+    length = info.payloadLength;
+    payload = (byte*)info.payload;
+  }
 }
 
 void MQTTConsumer::setup() {
@@ -63,14 +70,15 @@ void MQTTConsumer::setup() {
 uint32_t MQTTConsumer::loop() {
   if (_client.connected()) {
     STFLED_COMMAND(STFLEDEVENT_MQTT_CONNECTED);
-    consumeBuffers(_jsonBuffer);
+    // We might have setting retained, wait for that so they won't be overwritten
+    if (_messageArrived > 0 || Host::uptimeSec32() - _connectionTime >= 5) consumeBuffers(_jsonBuffer);
     _client.loop();
     return 10;
   }
   STFLED_COMMAND(STFLEDEVENT_MQTT_NOT_CONNECTED);
   if (WiFi.isConnected()) {
-    uint64_t uptime = Host::uptimeMS64();
-    if (uptime - _connectionTime > 5000 || _connectionTry == 0) {
+    uint32_t uptime = Host::uptimeSec32();
+    if (uptime - _connectionTime >= 5 || _connectionTry == 0) {
       _connectionTry++;
       _connectionTime = uptime;
       Log::connecting("MQTT server", _connectionTry);
@@ -78,9 +86,13 @@ uint32_t MQTTConsumer::loop() {
         Log::connected("MQTT server");
         _connectionTry = 0;
         _connectionTime = Host::uptimeSec32();
+        _messageArrived = 0;
         char subscribeStr[32 + strlen(Host::_name) + strlen(Host::_info.strId)];
         sprintf(subscribeStr, "home/%s/+/%s/command/#", Host::_name, Host::_info.strId);
-        STFLOG_INFO("MQTT subscribe to %s\n", subscribeStr);
+        STFLOG_INFO("%10llu MQTT subscribe to %s\n", Host::uptimeMS64(), subscribeStr);
+        _client.subscribe(subscribeStr);
+        sprintf(subscribeStr, "home/%s/SYSRtoMQTT/%s", Host::_name, Host::_info.strId);
+        STFLOG_INFO("%10llu MQTT subscribe to %s\n", Host::uptimeMS64(), subscribeStr);
         _client.subscribe(subscribeStr);
         return 10;
       } else {

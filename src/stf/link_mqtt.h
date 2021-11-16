@@ -47,8 +47,9 @@ protected:
   static void callback(char* topic, byte* payload, unsigned int length);
 
   StaticJsonBuffer<STFMQTT_JSONBUFFER_SIZE> _jsonBuffer;
-  uint32_t _connectionTime;
-  uint _connectionTry;
+  uint32_t _connectionTime = 0;
+  uint8_t _connectionTry = 0;
+  uint8_t _messageArrived = 0;
 
   WiFiClient _wifiClient;
   PubSubClient _client;

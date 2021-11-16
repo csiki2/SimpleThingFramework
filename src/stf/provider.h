@@ -27,8 +27,13 @@ class JsonBuffer;
 
 struct FeedbackInfo {
   void set(const char* topic, const uint8_t* payload, unsigned int length);
+  bool next();
 
   const char* topic;
+
+  const uint8_t* fullPayload;
+  uint fullPayloadLength;
+
   const uint8_t* payload;
   uint payloadLength;
 
@@ -39,6 +44,9 @@ struct FeedbackInfo {
   uint idStrLen;
 
   const char* fieldStr;
+  uint fieldStrLen;
+
+  bool retained;
 
   EnumTypeInfoTopic topicEnum;
   EnumDataField fieldEnum;

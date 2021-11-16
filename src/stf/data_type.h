@@ -59,7 +59,8 @@ enum EnumTypeInfoSupport {
 
 enum EnumTypeInfoTopic {
   etitSYS = 0,
-  etitBT = 1,
+  etitSYSR = 1,
+  etitBT = 2,
 
   etitTopicSubjectMask = 7,
 
@@ -69,6 +70,7 @@ enum EnumTypeInfoTopic {
   etitCommand = 3 << 3,
   etitTopicTypeMask = 3 << 3,
 
+  etitRetain = 128
 };
 
 enum EnumTypeInfoDevice {

@@ -28,32 +28,40 @@ DEFINE_PROVIDERTASK(SystemProvider, 3, 0, 0);
 SystemProvider::SystemProvider() : Provider(g_bufferSystemProvider) {
 }
 
-const DiscoveryBlock* SystemProvider::_listSystem[] = {&Discovery::_Uptime_S, &Discovery::_Uptime_D, &Discovery::_Free_Memory, nullptr};
+const DiscoveryBlock* SystemProvider::_listSystemNormal[] = {&Discovery::_Uptime_S, &Discovery::_Uptime_D, &Discovery::_Free_Memory, nullptr};
+const DiscoveryBlock* SystemProvider::_listSystemRetained[] = {&Discovery::_Free_Memory, nullptr};
 
 uint SystemProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESystemMessageType type) {
   uint res = 0;
   switch (type) {
     case ESystemMessageType::Discovery:
-      res = Discovery::addBlocks(systemBuffer, etitSYS, _listSystem, eeiNone, nullptr, Host::_name, "Test", "community", "0.01");
+      res = Discovery::addBlocks(systemBuffer, etitSYS, _listSystemNormal, eeiNone, nullptr, Host::_name, "Test", "community", "0.01");
+      res += Discovery::addBlocks(systemBuffer, etitSYSR, _listSystemRetained, eeiNone, nullptr, Host::_name, "Test", "community", "0.01");
       break;
     case ESystemMessageType::Normal:
-      res = 4;
+      res = 3;
       if (systemBuffer != nullptr && systemBuffer->getFreeBlocks() >= res) {
         systemBuffer->nextToWrite(edf__topic, edt_Topic, etitSYS, eeiCacheDeviceHost).setPtr(&Host::_info);
         systemBuffer->nextToWrite(edf_uptime_s, edt_32, 0 + etiDoubleField, edf_uptime_d).set32(uptimeS, uptimeS / (24 * 60 * 60));
         systemBuffer->nextToWrite(edf_ip, edt_Raw, 4 + etirSeparatorDot + etirFormatNumber).setRaw(Host::_ip4, 4);
-        systemBuffer->nextToWrite(edf_free_memory, edt_32, 0).set32(ESP.getFreeHeap());
         res = 0;
       }
       break;
+    case ESystemMessageType::Retained:
+      res = 2;
+      if (systemBuffer != nullptr && systemBuffer->getFreeBlocks() >= res) {
+        systemBuffer->nextToWrite(edf__topic, edt_Topic, etitSYSR + etitRetain, eeiCacheDeviceHost).setPtr(&Host::_info);
+        systemBuffer->nextToWrite(edf_free_memory, edt_32, 0).set32(ESP.getFreeHeap());
+        res = 0;
+      }
     default:
       break;
   }
   return res;
 }
 
-void SystemProvider::requestReport() {
-  g_SystemProviderObj._forceSystemReport = true;
+void SystemProvider::requestRetainedReport() {
+  g_SystemProviderObj._forceSystemRetainedReport = true;
 }
 
 uint SystemProvider::loop() {
@@ -62,17 +70,23 @@ uint SystemProvider::loop() {
   Consumer* cons = g_bufferSystemProvider->getConsumer();
   if (cons == nullptr || !cons->isReady()) return waitTime;
   uint32_t uptime = Host::uptimeSec32();
-  if (_forceSystemReport || _lastSystemReportTime < cons->readyTime() || _lastSystemReportTime + updateTimeS <= uptime) {
-    _lastSystemReportSuccess = ESystemMessageType::None;
-    _forceSystemReport = false;
+
+  if (_forceSystemRetainedReport) {
+    _forceSystemRetainedReport = false;
+    _reportRequired = (ESystemMessageType)((uint8_t)_reportRequired | (uint8_t)ESystemMessageType::Retained);
+  }
+  if (_lastSystemReportTime < cons->readyTime()) {
+    _reportRequired = ESystemMessageType::All;
+  } else if (_lastSystemReportTime + updateTimeS <= uptime) {
+    _reportRequired = (ESystemMessageType)((uint8_t)_reportRequired | (uint8_t)ESystemMessageType::Normal | (uint8_t)ESystemMessageType::Retained);
   }
 
-  if (_lastSystemReportSuccess == ESystemMessageType::All) return waitTime; // no report is needed
-  if (_lastSystemReportSuccess == ESystemMessageType::None) _lastSystemReportTime = uptime;
+  if (_reportRequired == ESystemMessageType::None) return waitTime; // no report is needed
+  if (((uint8_t)_reportRequired & (uint8_t)ESystemMessageType::Normal) != 0) _lastSystemReportTime = uptime;
 
   for (uint8_t type = 1; (type & (uint8_t)ESystemMessageType::All) != 0; type <<= 1) {
-    if ((type & (uint8_t)_lastSystemReportSuccess) == 0 && generateSystemReport(g_bufferSystemProvider, uptime, (ESystemMessageType)type))
-      _lastSystemReportSuccess = (ESystemMessageType)(type | (uint8_t)_lastSystemReportSuccess);
+    if ((type & (uint8_t)_reportRequired) != 0 && generateSystemReport(g_bufferSystemProvider, uptime, (ESystemMessageType)type))
+      _reportRequired = (ESystemMessageType)((uint8_t)_reportRequired & ~type);
   }
 
   return waitTime;

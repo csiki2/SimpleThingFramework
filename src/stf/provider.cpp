@@ -142,31 +142,86 @@ void Consumer::broadcastFeedback(const FeedbackInfo& info) {
 
 void FeedbackInfo::set(const char* topicInput, const uint8_t* payloadInput, unsigned int payloadLengthInput) {
   topic = topicInput;
-  payload = payloadInput;
-  payloadLength = payloadLengthInput;
+  fullPayload = payload = payloadInput;
+  fullPayloadLength = payloadLength = payloadLengthInput;
+  retained = false;
 
   const char *fndB, *fndE;
 
-  // Received MQTT message (home/SimpleThing_Test/MQTTtoSYS/EspDJ_295138/command/AC67B2295138_ota_switch)
-
-  if ((fndB = strstr(topic, "MQTTto")) != nullptr && (fndE = strchr(fndB, '/')) != nullptr) {
-    topicStr = fndB + 6;
+  if ((fndE = strstr(topic, "toMQTT/")) != nullptr && (fndB = (const char*)memrchr(topic, '/', fndE - topic)) != nullptr) {
+    // Received MQTT message (home/SimpleThing_Test/SYSRtoMQTT/EspDJ_AABBCC) [SYSR|AC67B2AABBCC|][1|-1] - {"ota":"OFF"}
+    topicStr = fndB + 1;
     topicStrLen = fndE - topicStr;
     topicEnum = DataType::findTopicName(topicStr, topicStrLen);
+    idStr = Host::_info.strMAC;
+    idStrLen = strlen(idStr);
+    retained = true;
+    fieldStr = "";
+    fieldStrLen = 0;
+    fieldEnum = (EnumDataField)-1;
+    payloadLength = 0;
+  } else if ((fndB = strstr(topic, "/MQTTto")) != nullptr && (fndE = strchr(fndB + 1, '/')) != nullptr) {
+    // Received MQTT message (home/SimpleThing_Test/MQTTtoSYSR/EspDJ_AABBCC/command/AC67B2AABBCC_ota) [SYSR|AC67B2AABBCC|ota][1|19] - ON
+    topicStr = fndB + 7;
+    topicStrLen = fndE - topicStr;
+    topicEnum = DataType::findTopicName(topicStr, topicStrLen);
+    idStr = (fndB = strrchr(topic, '/')) != nullptr ? fndB + 1 : "";
+    fieldStr = (idStr != nullptr && (fndB = strchr(idStr, '_')) != nullptr) ? fndB + 1 : "";
+    fieldStrLen = strlen(fieldStr);
+    idStrLen = fieldStr != nullptr ? fndB - idStr : 0;
+    fieldEnum = (EnumDataField)Helper::getArrayIndex(fieldStr, fieldStrLen, DataField::_list, DataField::_listNum);
   } else {
-    topicStr = nullptr;
-    topicStrLen = 0;
+    topicStr = idStr = fieldStr = "";
+    topicStrLen = idStrLen = fieldStrLen = 0;
     topicEnum = (EnumTypeInfoTopic)-1;
+    fieldEnum = (EnumDataField)-1;
   }
-
-  idStr = (fndB = strrchr(topic, '/')) != nullptr ? fndB + 1 : nullptr;
-  fieldStr = (idStr != nullptr && (fndB = strchr(idStr, '_')) != nullptr) ? fndB + 1 : nullptr;
-  idStrLen = fieldStr != nullptr ? fndB - idStr : 0;
-
-  fieldEnum = (EnumDataField)Helper::getArrayIndex(fieldStr, strlen(fieldStr), DataField::_list, DataField::_listNum);
 
   //const uint8_t mac[8]; TODO
   //uint macLen;
+}
+
+bool FeedbackInfo::next() {
+  if (!retained) return false;
+
+  const char *fndB, *fndE;
+  const char* str = (const char*)payload + payloadLength;
+  if (*str == '"') str++;
+
+  fieldStr = "";
+  payload = fullPayload + fullPayloadLength;
+  fieldStrLen = payloadLength = 0;
+
+  const char* pe = (const char*)payload;
+
+  fndB = Helper::strchr(str, pe, '"');
+  if (fndB == nullptr) return false;
+  fndE = Helper::strchr(fndB + 1, pe, '"');
+  if (fndE == nullptr) return false;
+
+  fieldStr = fndB + 1;
+  fieldStrLen = fndE - fieldStr;
+  fieldEnum = (EnumDataField)Helper::getArrayIndex(fieldStr, fieldStrLen, DataField::_list, DataField::_listNum);
+
+  fndB = Helper::strchr(fndE, pe, ':');
+  if (fndB == nullptr) return false;
+  while (++fndB < pe && isspace(*fndB))
+    ;
+  if (fndB == pe || *fndB == '{' || *fndB == '[') return false; // not supported
+  if (*fndB != '"') { // Easy case
+    if ((fndE = Helper::stranychr(fndB, pe, ",}")) == nullptr) return false;
+    while (fndB < fndE && isspace(fndE[-1])) fndE--;
+    payload = (const uint8_t*)fndB;
+    payloadLength = fndE - fndB;
+    return true;
+  }
+  for (fndE = ++fndB;;) {
+    if ((fndE = Helper::strchr(fndE, pe, '"')) == nullptr) return false;
+    if (fndE[-1] != '\'') break;
+  }
+  payload = (const uint8_t*)fndB;
+  payloadLength = fndE - fndB;
+  return true;
 }
 
 } // namespace stf
