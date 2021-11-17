@@ -73,20 +73,20 @@ uint SystemProvider::loop() {
 
   if (_forceSystemRetainedReport) {
     _forceSystemRetainedReport = false;
-    _reportRequired = (ESystemMessageType)((uint8_t)_reportRequired | (uint8_t)ESystemMessageType::Retained);
+    _reportRequired += ESystemMessageType::Retained;
   }
   if (_lastSystemReportTime < cons->readyTime()) {
     _reportRequired = ESystemMessageType::All;
   } else if (_lastSystemReportTime + updateTimeS <= uptime) {
-    _reportRequired = (ESystemMessageType)((uint8_t)_reportRequired | (uint8_t)ESystemMessageType::Normal | (uint8_t)ESystemMessageType::Retained);
+    _reportRequired += ESystemMessageType::Normal;
+    _reportRequired += ESystemMessageType::Retained;
   }
 
-  if (_reportRequired == ESystemMessageType::None) return waitTime; // no report is needed
-  if (((uint8_t)_reportRequired & (uint8_t)ESystemMessageType::Normal) != 0) _lastSystemReportTime = uptime;
+  if (_reportRequired.isEmpty()) return waitTime; // no report is needed
+  if (_reportRequired.contains(ESystemMessageType::Normal)) _lastSystemReportTime = uptime;
 
-  for (uint8_t type = 1; (type & (uint8_t)ESystemMessageType::All) != 0; type <<= 1) {
-    if ((type & (uint8_t)_reportRequired) != 0 && generateSystemReport(g_bufferSystemProvider, uptime, (ESystemMessageType)type))
-      _reportRequired = (ESystemMessageType)((uint8_t)_reportRequired & ~type);
+  for (ESystemMessageType nxt = ESystemMessageType::None; _reportRequired.next(nxt);) {
+    if (generateSystemReport(g_bufferSystemProvider, uptime, nxt)) _reportRequired -= nxt;
   }
 
   return waitTime;

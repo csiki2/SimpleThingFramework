@@ -19,6 +19,7 @@
 #pragma once
 
 #include <stf/provider.h>
+#include <stf/util.h>
 
 namespace stf {
 
@@ -41,7 +42,7 @@ protected:
   bool generateSystemReport(DataBuffer* systemBuffer, uint32_t uptimeS, ESystemMessageType type);
 
   uint32_t _lastSystemReportTime = 0;
-  ESystemMessageType _reportRequired = ESystemMessageType::None;
+  EnumClassFlags<ESystemMessageType> _reportRequired;
   bool _forceSystemRetainedReport = false;
 };
 

@@ -36,4 +36,42 @@ public:
   static int getArrayIndex(const char* str, uint strLen, const char* arr[], uint arrLen);
 };
 
+template <typename E>
+class EnumClassFlags {
+public:
+  inline EnumClassFlags& operator+=(uint32_t flag) {
+    _flags = (E)((uint32_t)_flags | flag);
+    return *this;
+  }
+  inline EnumClassFlags& operator+=(E flag) { return operator+=((uint32_t)flag); }
+
+  inline EnumClassFlags& operator-=(uint32_t flag) {
+    _flags = (E)((uint32_t)_flags & ~flag);
+    return *this;
+  }
+  inline EnumClassFlags& operator-=(E flag) { return operator-=((uint32_t)flag); }
+
+  inline EnumClassFlags& operator=(E flag) {
+    _flags = flag;
+    return *this;
+  }
+  inline EnumClassFlags& operator=(uint32_t flag) { return operator=((E)flag); }
+
+  inline bool isEmpty() const { return _flags == (E)0; }
+  inline bool contains(uint32_t flag) const { return flag == ((uint32_t)_flags & flag); }
+  inline bool contains(E flag) const { return contains((uint32_t)flag); }
+
+  inline bool next(E& it) const {
+    uint32_t nxt = (uint32_t)it;
+    uint32_t flg = (uint32_t)_flags;
+    if (nxt != 0) flg &= ~((nxt << 1) - 1);
+    nxt = flg & -flg;
+    it = (E)nxt;
+    return nxt != 0;
+  }
+
+protected:
+  E _flags = (E)0;
+};
+
 } // namespace stf
