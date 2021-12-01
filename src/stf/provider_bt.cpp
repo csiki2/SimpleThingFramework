@@ -179,8 +179,9 @@ uint BTProvider::loop() {
   NimBLEScan* scan = NimBLEDevice::getScan();
   bool isScanning = scan->isScanning();
   if (isConsumerReady()) {
-    uint32_t readyTime = g_bufferBTProvider->getConsumer()->readyTime();
-    if (_discoveryList._connectionTime < readyTime) _discoveryList._connectionTime = readyTime;
+    uint32_t consumerTime = g_bufferBTProvider->getConsumer()->ellapsedTimeSinceReady();
+    uint32_t discoveryTime = _discoveryList._lastReadyTime.elapsedTime();
+    if (discoveryTime > consumerTime) _discoveryList._lastReadyTime.reset();
     if (!isScanning) scan->start(0, nullptr, false);
   } else {
     if (isScanning) scan->stop();

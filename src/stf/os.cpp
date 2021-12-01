@@ -44,4 +44,30 @@ void Host::setup() {
   STFLOG_INFO("Host id: %s\n", _info.strId);
 }
 
+uint32_t ElapsedTime::elapsedTime() const {
+  if (_time == 0) return MaxElapsed;
+  uint32_t diff = Host::uptimeMS32() - _time;
+  if (diff < MaxElapsed) return diff;
+  _time = 0; // we reset it so we never overrun from this point
+  return MaxElapsed;
+}
+
+void ElapsedTime::reset() {
+  _time = Host::uptimeMS32();
+  if (_time == 0) _time = -1; // resolve the very rare case when uptime is collide with ElapsedTime's 0
+}
+
+bool ElapsedTime::operator==(const ElapsedTime& t) const {
+  uint32_t uptime = Host::uptimeMS32();
+  if (uptime - _time >= MaxElapsed) _time = 0;
+  if (uptime - t._time >= MaxElapsed) t._time = 0;
+  return _time == t._time;
+}
+
+ElapsedTime& ElapsedTime::operator=(const ElapsedTime& t) {
+  if (Host::uptimeMS32() - t._time >= MaxElapsed) t._time = 0;
+  _time = t._time;
+  return *this;
+}
+
 } // namespace stf

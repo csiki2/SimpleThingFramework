@@ -65,35 +65,37 @@ void SystemProvider::requestRetainedReport() {
 }
 
 uint SystemProvider::loop() {
-  const uint waitTime = 50, updateTimeS = 120;
+  const uint waitTime = 50, updateTimeMS = 120000;
 
   Consumer* cons = g_bufferSystemProvider->getConsumer();
   if (cons == nullptr || !cons->isReady()) return waitTime;
-  uint32_t uptime = Host::uptimeSec32();
 
   if (_forceSystemRetainedReport) {
     _forceSystemRetainedReport = false;
     _reportRequired += ESystemMessageType::Retained;
   }
-  if (_lastSystemReportTime < cons->readyTime()) {
+
+  uint32_t reportTime = _lastSystemReportTime.elapsedTime();
+  if (reportTime > cons->ellapsedTimeSinceReady()) {
     _reportRequired = ESystemMessageType::All;
-  } else if (_lastSystemReportTime + updateTimeS <= uptime) {
+  } else if (reportTime >= updateTimeMS) {
     _reportRequired += ESystemMessageType::Normal;
     _reportRequired += ESystemMessageType::Retained;
   }
 
   if (_reportRequired.isEmpty()) return waitTime; // no report is needed
-  if (_reportRequired.contains(ESystemMessageType::Normal)) _lastSystemReportTime = uptime;
+  if (_reportRequired.contains(ESystemMessageType::Normal)) _lastSystemReportTime.reset();
 
   for (ESystemMessageType nxt = ESystemMessageType::None; _reportRequired.next(nxt);) {
-    if (generateSystemReport(g_bufferSystemProvider, uptime, nxt)) _reportRequired -= nxt;
+    if (generateSystemReport(g_bufferSystemProvider, nxt)) _reportRequired -= nxt;
   }
 
   return waitTime;
 }
 
-bool SystemProvider::generateSystemReport(DataBuffer* systemBuffer, uint32_t uptimeS, ESystemMessageType type) {
+bool SystemProvider::generateSystemReport(DataBuffer* systemBuffer, ESystemMessageType type) {
   int sum = 0;
+  uint32_t uptimeS = Host::uptimeSec32();
   for (Provider* p = _providerHead; p != nullptr; p = (Provider*)p->_objectNext)
     sum += p->systemUpdate(nullptr, uptimeS, type);
   if (g_bufferSystemProvider->getFreeBlocks() < sum) return false;

@@ -117,9 +117,7 @@ EnumBTResult BTResolver::serviceTelinkLYWSD03MMC_atc1441_pvvx(const uint8_t* mac
 
 #define STF_BTDEVICE_SIZE 16
 
-BTDeviceGroup::BTDeviceGroup() {
-  _connectionTime = _discoveryTime = 0;
-}
+BTDeviceGroup::BTDeviceGroup() {}
 
 BTDevice* BTDeviceGroup::findDevice(const uint8_t* mac) {
   uint32_t v4 = *(const uint32_t*)mac;
@@ -153,8 +151,8 @@ BTDevice* BTDeviceGroup::findOrCreateDevice(const uint8_t* mac) {
 }
 
 void BTDeviceGroup::updateDevices() {
-  if (_connectionTime != _discoveryTime) {
-    _discoveryTime = _connectionTime;
+  if (_lastReadyTime != _discoveryTime) {
+    _discoveryTime = _lastReadyTime;
     for (BTDevice* arr : _devices)
       for (int idx = 0; idx < STF_BTDEVICE_SIZE; idx++) arr[idx]._discovery = false;
   }

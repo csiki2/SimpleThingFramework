@@ -71,21 +71,20 @@ uint32_t MQTTConsumer::loop() {
   if (_client.connected()) {
     STFLED_COMMAND(STFLEDEVENT_MQTT_CONNECTED);
     // We might have setting retained, wait for that so they won't be overwritten
-    if (_messageArrived > 0 || Host::uptimeSec32() - _connectionTime >= 5) consumeBuffers(_jsonBuffer);
+    if (_messageArrived > 0 || _readyTime.elapsedTime() > 5000) consumeBuffers(_jsonBuffer);
     _client.loop();
     return 10;
   }
   STFLED_COMMAND(STFLEDEVENT_MQTT_NOT_CONNECTED);
   if (WiFi.isConnected()) {
-    uint32_t uptime = Host::uptimeSec32();
-    if (uptime - _connectionTime >= 5 || _connectionTry == 0) {
+    if (_connectionTry == 0 || _readyTime.elapsedTime() > 5000) {
       _connectionTry++;
-      _connectionTime = uptime;
+      _readyTime.reset();
       Log::connecting("MQTT server", _connectionTry);
       if (_client.connect(Host::_name, NetTask::_mqttUser, NetTask::_mqttPassword)) {
         Log::connected("MQTT server");
         _connectionTry = 0;
-        _connectionTime = Host::uptimeSec32();
+        _readyTime.reset();
         _messageArrived = 0;
         char subscribeStr[32 + strlen(Host::_name) + strlen(Host::_info.strId)];
         sprintf(subscribeStr, "home/%s/+/%s/command/#", Host::_name, Host::_info.strId);
@@ -104,7 +103,6 @@ uint32_t MQTTConsumer::loop() {
 }
 
 bool MQTTConsumer::isReady() { return _client.connected(); }
-uint32_t MQTTConsumer::readyTime() { return _connectionTime; }
 
 bool MQTTConsumer::send(JsonBuffer& jsonBuffer, bool retain) {
   //return false;

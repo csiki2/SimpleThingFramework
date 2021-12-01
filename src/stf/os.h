@@ -68,4 +68,25 @@ public:
   static uint32_t _startingFreeHeap;
 };
 
+/**
+ * @brief Gives back the elapsed time since reset() in ms, but maximum MaxElapsed (currently ~23 days).
+ * 
+ * Any of the called methods (except reset()) might set the internal _time to 0 to not overflow and will give back only MaxElapsed from that point.
+ * Any of the method should be called at least every 2^32-MaxElapsed time (currently ~26 days...) so it won't fail to detect the overrun.
+ */
+class ElapsedTime {
+public:
+  static constexpr uint32_t MaxElapsed = 2000000000;
+
+  uint32_t elapsedTime() const;
+  void reset();
+
+  bool operator==(const ElapsedTime& t) const;
+  inline bool operator!=(const ElapsedTime& t) const { return !operator==(t); }
+  ElapsedTime& operator=(const ElapsedTime& t);
+
+protected:
+  mutable uint32_t _time = 0;
+};
+
 } // namespace stf

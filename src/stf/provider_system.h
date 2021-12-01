@@ -39,10 +39,10 @@ public:
   static const DiscoveryBlock* _listSystemRetained[];
 
 protected:
-  bool generateSystemReport(DataBuffer* systemBuffer, uint32_t uptimeS, ESystemMessageType type);
+  bool generateSystemReport(DataBuffer* systemBuffer, ESystemMessageType type);
 
-  uint32_t _lastSystemReportTime = 0;
   EnumClassFlags<ESystemMessageType> _reportRequired;
+  ElapsedTime _lastSystemReportTime;
   bool _forceSystemRetainedReport = false;
 };
 

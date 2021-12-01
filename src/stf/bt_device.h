@@ -74,8 +74,8 @@ public:
   BTDevice* findDevice(const uint8_t* mac);
   BTDevice* findOrCreateDevice(const uint8_t* mac);
 
-  uint32_t _connectionTime;
-  uint32_t _discoveryTime;
+  ElapsedTime _lastReadyTime;
+  ElapsedTime _discoveryTime;
 
   std::vector<BTDevice*> _devices;
 };

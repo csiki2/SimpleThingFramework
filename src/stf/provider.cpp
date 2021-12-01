@@ -67,8 +67,8 @@ Consumer::Consumer() : _bufferHead(nullptr) {
   _messageCreated = _messageSent = 0;
 }
 
-uint32_t Consumer::readyTime() {
-  return 0ull;
+uint32_t Consumer::ellapsedTimeSinceReady() {
+  return _readyTime.elapsedTime();
 }
 
 void Consumer::addBuffer(DataBuffer* buffer) {

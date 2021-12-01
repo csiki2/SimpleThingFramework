@@ -99,7 +99,7 @@ public:
   Consumer();
 
   virtual bool isReady() = 0;
-  virtual uint32_t readyTime();
+  virtual uint32_t ellapsedTimeSinceReady();
 
   void addBuffer(DataBuffer* buffer);
   DataBuffer* getNextBuffer(DataBuffer* buffer);
@@ -114,6 +114,7 @@ protected:
   void broadcastFeedback(const FeedbackInfo& info);
 
   DataBuffer* _bufferHead;
+  ElapsedTime _readyTime;
   uint _messageCreated;
   uint _messageSent;
 };

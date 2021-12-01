@@ -38,7 +38,6 @@ public:
   uint32_t loop();
 
   bool isReady() override;
-  uint32_t readyTime() override;
 
 protected:
   MQTTConsumer();
@@ -47,7 +46,6 @@ protected:
   static void callback(char* topic, byte* payload, unsigned int length);
 
   StaticJsonBuffer<STFMQTT_JSONBUFFER_SIZE> _jsonBuffer;
-  uint32_t _connectionTime = 0;
   uint8_t _connectionTry = 0;
   uint8_t _messageArrived = 0;
 
