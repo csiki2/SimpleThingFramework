@@ -28,25 +28,25 @@ class DataBuffer;
 enum class EnumBTResult {
   Resolved = 0,
   Unknown = 1,
-  SmallBuffer = 2
+  SmallBuffer = 2,
+  Disabled = 3,
 };
+
+class BTPacket;
 
 class BTResolver {
 public:
-  static EnumBTResult resolve(const uint8_t* mac, uint8_t macType, uint32_t uuid, const uint8_t* serviceData, uint serviceDataLength, DataBuffer& buffer);
+  static EnumBTResult resolve(DataBuffer* buffer, const BTPacket& packet);
 
 protected:
   static int32_t getBufferValue(const uint8_t* buffer, uint8_t size);
   static uint addDiscoveryBlocks(DataBuffer& buffer, const DiscoveryBlock** list, const uint8_t* mac, const char* deviceName, const char* deviceModel, const char* deviceManufacturer, const char* deviceSW);
 
-  struct ServiceType {
-    uint32_t uuid;
-    EnumBTResult (*func)(const uint8_t* mac, uint8_t macType, uint32_t uuid, const uint8_t* serviceData, uint serviceDataLength, DataBuffer& buffer);
-  };
-  static const ServiceType _serviceFunctions[];
+  typedef EnumBTResult (*ServiceFunction)(DataBuffer* buffer, const BTPacket& packet);
+  static const ServiceFunction _serviceFunctions[];
 
-  static EnumBTResult serviceMiBacon(const uint8_t* mac, uint8_t macType, uint32_t uuid, const uint8_t* serviceData, uint serviceDataLength, DataBuffer& buffer);
-  static EnumBTResult serviceTelinkLYWSD03MMC_atc1441_pvvx(const uint8_t* mac, uint8_t macType, uint32_t uuid, const uint8_t* serviceData, uint serviceDataLength, DataBuffer& buffer);
+  static EnumBTResult serviceMiBacon(DataBuffer* buffer, const BTPacket& packet);
+  static EnumBTResult serviceTelinkLYWSD03MMC_atc1441_pvvx(DataBuffer* buffer, const BTPacket& packet);
 };
 
 class STFATTR_PACKED BTDevice {

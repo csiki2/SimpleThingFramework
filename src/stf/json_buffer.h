@@ -40,7 +40,9 @@ public:
   void addDataBlock(const DataBlock& block_, DataCache& cache);
   static int blockToStr(char* buffer, uint len, const DataBlock& block, DataCache& cache);
 
-  void logContent();
+  const char* getTopic(const char* onEmpty = nullptr) const;
+
+  void log(int level = STFLOG_LEVEL_INFO, bool topic = true, bool value = true);
 
   //protected:
   inline bool addChar(const char chr) {

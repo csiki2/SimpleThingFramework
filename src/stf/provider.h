@@ -82,6 +82,8 @@ public:
   static Provider* getNext(Provider* provider, DataBuffer* parentBuffer);
 
 protected:
+  bool handleSimpleFeedback(const FeedbackInfo& info, const char* name, stf::EnumDataField field, bool& value);
+
   DataBuffer* _parentBuffer;
 
   static Provider* _providerHead;

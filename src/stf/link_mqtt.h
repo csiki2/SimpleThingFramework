@@ -42,6 +42,7 @@ public:
 protected:
   MQTTConsumer();
   bool send(JsonBuffer& jsonBuffer, bool retain) override;
+  void localSubscribe(const char* topicFormat, bool subscribe = true);
 
   static void callback(char* topic, byte* payload, unsigned int length);
 

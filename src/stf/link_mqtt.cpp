@@ -33,7 +33,10 @@ MQTTConsumer::MQTTConsumer() : _client(_wifiClient) {
 }
 
 void MQTTConsumer::callback(char* topic, byte* payload, unsigned int length) {
-  _obj._messageArrived = 1;
+  if (_obj._messageArrived == 0 && strstr(topic, "/SYSRtoMQTT/") != nullptr) {
+    _obj._messageArrived = 1;
+  }
+
   FeedbackInfo info;
   info.set(topic, payload, length);
 
@@ -70,8 +73,12 @@ void MQTTConsumer::setup() {
 uint32_t MQTTConsumer::loop() {
   if (_client.connected()) {
     STFLED_COMMAND(STFLEDEVENT_MQTT_CONNECTED);
+    if (_messageArrived == 1 || (_messageArrived == 0 && _readyTime.elapsedTime() > 5000)) {
+      _messageArrived = 2;
+      localSubscribe("home/%s/SYSRtoMQTT/%s", false);
+    }
     // We might have setting retained, wait for that so they won't be overwritten
-    if (_messageArrived > 0 || _readyTime.elapsedTime() > 5000) consumeBuffers(_jsonBuffer);
+    if (_messageArrived == 2) consumeBuffers(_jsonBuffer);
     _client.loop();
     return 10;
   }
@@ -86,13 +93,8 @@ uint32_t MQTTConsumer::loop() {
         _connectionTry = 0;
         _readyTime.reset();
         _messageArrived = 0;
-        char subscribeStr[32 + strlen(Host::_name) + strlen(Host::_info.strId)];
-        sprintf(subscribeStr, "home/%s/+/%s/command/#", Host::_name, Host::_info.strId);
-        STFLOG_INFO("%10llu MQTT subscribe to %s\n", Host::uptimeMS64(), subscribeStr);
-        _client.subscribe(subscribeStr);
-        sprintf(subscribeStr, "home/%s/SYSRtoMQTT/%s", Host::_name, Host::_info.strId);
-        STFLOG_INFO("%10llu MQTT subscribe to %s\n", Host::uptimeMS64(), subscribeStr);
-        _client.subscribe(subscribeStr);
+        localSubscribe("home/%s/+/%s/command/#");
+        localSubscribe("home/%s/SYSRtoMQTT/%s");
         return 10;
       } else {
         STFLOG_INFO("Unable to connect to the MQTT Server.\n");
@@ -102,11 +104,22 @@ uint32_t MQTTConsumer::loop() {
   return 0;
 }
 
-bool MQTTConsumer::isReady() { return _client.connected(); }
+// Don't allow to the Providers (SystemProvider!!!) to generate any message till the status message is not arrived (or already waited 5sec)
+bool MQTTConsumer::isReady() { return _client.connected() && _messageArrived == 2; }
 
 bool MQTTConsumer::send(JsonBuffer& jsonBuffer, bool retain) {
   //return false;
   return _client.publish(jsonBuffer._buffer + jsonBuffer._jsonSize, (const uint8_t*)jsonBuffer._buffer, jsonBuffer._pos, retain);
+}
+
+void MQTTConsumer::localSubscribe(const char* topicFormat, bool subscribe) {
+  char subscribeStr[strlen(topicFormat) + strlen(Host::_name) + strlen(Host::_info.strId)];
+  sprintf(subscribeStr, topicFormat, Host::_name, Host::_info.strId);
+  STFLOG_INFO("%10llu MQTT %s %s\n", Host::uptimeMS64(), subscribe ? "subscribe to" : "unsubscribe from", subscribeStr);
+  if (subscribe)
+    _client.subscribe(subscribeStr);
+  else
+    _client.unsubscribe(subscribeStr);
 }
 
 } // namespace stf

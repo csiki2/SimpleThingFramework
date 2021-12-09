@@ -52,42 +52,45 @@
 #endif
 
 #ifndef STFLOG_PRINT
-#  define STFLOG_PRINT(level, fmt...) Serial.printf(fmt)
+#  define STFLOG_PRINT(fmt...) Serial.printf(fmt)
+#endif
+#ifndef STFLOG_WRITE
+#  define STFLOG_WRITE(chrOrStr) Serial.write(chrOrStr)
 #endif
 
 #if STFLOG_LEVEL < STFLOG_LEVEL_FATAL
 #  undef STFLOG_FATAL
 #  define STFLOG_FATAL(fmt...)
 #elif !defined(STFLOG_FATAL)
-#  define STFLOG_FATAL(fmt...) STFLOG_PRINT(STFLOG_LEVEL_FATAL, fmt)
+#  define STFLOG_FATAL(fmt...) STFLOG_PRINT(fmt)
 #endif
 
 #if STFLOG_LEVEL < STFLOG_LEVEL_ERROR
 #  undef STFLOG_ERROR
 #  define STFLOG_ERROR(fmt...)
 #elif !defined(STFLOG_ERROR)
-#  define STFLOG_ERROR(fmt...) STFLOG_PRINT(STFLOG_LEVEL_ERROR, fmt)
+#  define STFLOG_ERROR(fmt...) STFLOG_PRINT(fmt)
 #endif
 
 #if STFLOG_LEVEL < STFLOG_LEVEL_WARNING
 #  undef STFLOG_WARNING
 #  define STFLOG_WARNING(fmt...)
 #elif !defined(STFLOG_WARNING)
-#  define STFLOG_WARNING(fmt...) STFLOG_PRINT(STFLOG_LEVEL_WARNING, fmt)
+#  define STFLOG_WARNING(fmt...) STFLOG_PRINT(fmt)
 #endif
 
 #if STFLOG_LEVEL < STFLOG_LEVEL_INFO
 #  undef STFLOG_INFO
 #  define STFLOG_INFO(fmt...)
 #elif !defined(STFLOG_INFO)
-#  define STFLOG_INFO(fmt...) STFLOG_PRINT(STFLOG_LEVEL_INFO, fmt)
+#  define STFLOG_INFO(fmt...) STFLOG_PRINT(fmt)
 #endif
 
 #if STFLOG_LEVEL < STFLOG_LEVEL_DEBUG
 #  undef STFLOG_DEBUG
 #  define STFLOG_DEBUG(fmt...)
 #elif !defined(STFLOG_DEBUG)
-#  define STFLOG_DEBUG(fmt...) STFLOG_PRINT(STFLOG_LEVEL_DEBUG, fmt)
+#  define STFLOG_DEBUG(fmt...) STFLOG_PRINT(fmt)
 #endif
 
 // LED handling

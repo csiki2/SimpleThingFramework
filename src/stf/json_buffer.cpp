@@ -24,9 +24,24 @@
 
 namespace stf {
 
-void JsonBuffer::logContent() {
-  STFLOG_INFO("JsonBuffer topic: %s\n", _jsonSize == _totalSize ? "no_topic" : _buffer + _jsonSize);
-  STFLOG_INFO("JsonBuffer result: %s\n", _buffer);
+void JsonBuffer::log(int level, bool topic, bool value) {
+  if (STFLOG_LEVEL < level || (!topic && !value)) return;
+  // We will use this frequently, avoid using STFLOG_PRINT
+  STFLOG_WRITE("JsonBuffer");
+  if (topic) {
+    STFLOG_WRITE(" (");
+    STFLOG_WRITE(getTopic("no topic"));
+    STFLOG_WRITE(')');
+  }
+  if (value) {
+    STFLOG_WRITE(" - ");
+    STFLOG_WRITE(_buffer);
+  }
+  STFLOG_WRITE('\n');
+}
+
+const char* JsonBuffer::getTopic(const char* onEmpty) const {
+  return _jsonSize != _totalSize ? _buffer + _jsonSize : onEmpty;
 }
 
 void JsonBuffer::start() {
@@ -39,7 +54,6 @@ void JsonBuffer::start() {
 void JsonBuffer::finish() {
   addChar('}');
   if (_pos < _jsonSize) _buffer[_pos] = 0;
-  logContent();
   if (_failCounter > 0) STFLOG_WARNING("JsonBuffer Failed to resolve all the data blocks (%u)\n", _failCounter);
 }
 

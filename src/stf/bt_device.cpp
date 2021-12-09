@@ -22,17 +22,15 @@
 
 namespace stf {
 
-const BTResolver::ServiceType BTResolver::_serviceFunctions[] = {
-    {0xfe95, &serviceMiBacon},
-    {0x181a, &serviceTelinkLYWSD03MMC_atc1441_pvvx},
+const BTResolver::ServiceFunction BTResolver::_serviceFunctions[] = {
+    &serviceMiBacon,
+    &serviceTelinkLYWSD03MMC_atc1441_pvvx,
 };
 
-EnumBTResult BTResolver::resolve(const uint8_t* mac, uint8_t macType, uint32_t uuid, const uint8_t* serviceData, uint serviceDataLength, DataBuffer& buffer) {
-  for (const ServiceType& sf : _serviceFunctions) {
-    if (sf.uuid == uuid) {
-      EnumBTResult res = sf.func(mac, macType, uuid, serviceData, serviceDataLength, buffer);
-      if (res != EnumBTResult::Unknown) return res;
-    }
+EnumBTResult BTResolver::resolve(DataBuffer* buffer, const BTPacket& packet) {
+  for (const ServiceFunction& sf : _serviceFunctions) {
+    EnumBTResult res = sf(buffer, packet);
+    if (res != EnumBTResult::Unknown) return res;
   }
   return EnumBTResult::Unknown;
 }
@@ -51,16 +49,18 @@ uint BTResolver::addDiscoveryBlocks(DataBuffer& buffer, const DiscoveryBlock** l
 }
 
 // Service functions
-
-EnumBTResult BTResolver::serviceMiBacon(const uint8_t* mac, uint8_t macType, uint32_t uuid, const uint8_t* serviceData, uint serviceDataLength, DataBuffer& buffer) {
-  if (serviceDataLength < 14 || serviceDataLength < 14 + serviceData[13]) return EnumBTResult::Unknown;
+EnumBTResult BTResolver::serviceMiBacon(DataBuffer* buffer, const BTPacket& packet) {
+  uint serviceDataLength = 14; // expected minimum length
+  const uint8_t* serviceData = packet.getServiceDataByUUID(0xfe95, serviceDataLength);
+  if (serviceData == nullptr || serviceDataLength < 14 + serviceData[13]) return EnumBTResult::Unknown;
+  if (buffer == nullptr) return EnumBTResult::Resolved;
   uint16_t type = serviceData[2] + (serviceData[3] << 8);
 
   const char* model = "Unknown";
   switch (type) {
     case 0x01aa:
       model = "LYWSDCGQ";
-      if (addDiscoveryBlocks(buffer, Discovery::_listVoltBattHumTempC + 1, mac, "MiJia ", model, "Xiaomi, Qingping", nullptr) != 0) return EnumBTResult::SmallBuffer;
+      if (addDiscoveryBlocks(*buffer, Discovery::_listVoltBattHumTempC + 1, packet._mac, "MiJia ", model, "Xiaomi, Qingping", nullptr) != 0) return EnumBTResult::SmallBuffer;
       break;
     default:
       break;
@@ -68,48 +68,51 @@ EnumBTResult BTResolver::serviceMiBacon(const uint8_t* mac, uint8_t macType, uin
   uint8_t vlen = serviceData[13];
   switch (serviceData[11]) {
     case 4:
-      if (buffer.getFreeBlocks() < 3) return EnumBTResult::SmallBuffer;
-      buffer.nextToWrite(edf_tempc, edt_Float, 1).setFloat(getBufferValue(serviceData + 14, vlen) / 10.f);
+      if (buffer->getFreeBlocks() < 3) return EnumBTResult::SmallBuffer;
+      buffer->nextToWrite(edf_tempc, edt_Float, 1).setFloat(getBufferValue(serviceData + 14, vlen) / 10.f);
       break;
     case 6:
-      if (buffer.getFreeBlocks() < 3) return EnumBTResult::SmallBuffer;
-      buffer.nextToWrite(edf_hum, edt_Float, 1).setFloat(getBufferValue(serviceData + 14, vlen) / 10.f);
+      if (buffer->getFreeBlocks() < 3) return EnumBTResult::SmallBuffer;
+      buffer->nextToWrite(edf_hum, edt_Float, 1).setFloat(getBufferValue(serviceData + 14, vlen) / 10.f);
       break;
     case 10:
-      if (buffer.getFreeBlocks() < 3) return EnumBTResult::SmallBuffer;
-      buffer.nextToWrite(edf_batt, edt_32, 0).set32(getBufferValue(serviceData + 14, vlen));
+      if (buffer->getFreeBlocks() < 3) return EnumBTResult::SmallBuffer;
+      buffer->nextToWrite(edf_batt, edt_32, 0).set32(getBufferValue(serviceData + 14, vlen));
       break;
     case 13:
       if (vlen != 4) return EnumBTResult::Unknown;
-      if (buffer.getFreeBlocks() < 3) return EnumBTResult::SmallBuffer;
-      buffer.nextToWrite(edf_tempc, edt_Float, 1 + etiDoubleField, edf_hum).setFloat(getBufferValue(serviceData + 14, 2) / 10.f, getBufferValue(serviceData + 16, 2) / 10.f);
-      //buffer_.nextToWrite(edf_hum, edt_Float, 1).setFloat(GetBufferValue(serviceData_ + 16, 2) / 10.f);
+      if (buffer->getFreeBlocks() < 3) return EnumBTResult::SmallBuffer;
+      buffer->nextToWrite(edf_tempc, edt_Float, 1 + etiDoubleField, edf_hum).setFloat(getBufferValue(serviceData + 14, 2) / 10.f, getBufferValue(serviceData + 16, 2) / 10.f);
       break;
 
     default:
       return EnumBTResult::Unknown;
       break;
   }
-  buffer.nextToWrite(edf__topic, edt_Topic, etitBT, eeiCacheDeviceMAC48).setMAC48(mac);
-  buffer.nextToWrite(edf_model, edt_String, 0).setPtr((const char*)model);
+  buffer->nextToWrite(edf__topic, edt_Topic, etitBT, eeiCacheDeviceMAC48).setMAC48(packet._mac);
+  buffer->nextToWrite(edf_model, edt_String, 0).setPtr((const char*)model);
 
   return EnumBTResult::Resolved;
 }
 
 // Special firmware for Xiaomi LYWSD03MMC from Telink
 // See more at https://github.com/pvvx/ATC_MiThermometer (forked from https://github.com/atc1441/ATC_MiThermometer)
-EnumBTResult BTResolver::serviceTelinkLYWSD03MMC_atc1441_pvvx(const uint8_t* mac, uint8_t macType, uint32_t uuid, const uint8_t* serviceData, uint serviceDataLength, DataBuffer& buffer) {
-  if (mac[0] != 0xA4 || mac[1] != 0xC1 || mac[2] != 0x38 || serviceDataLength < 15) return EnumBTResult::Unknown;
+EnumBTResult BTResolver::serviceTelinkLYWSD03MMC_atc1441_pvvx(DataBuffer* buffer, const BTPacket& packet) {
+  if (!packet.checkMAC(0, 0xA4, 0xC1, 0x38)) return EnumBTResult::Unknown;
+  uint serviceDataLength = 15; // expected minimum length
+  const uint8_t* serviceData = packet.getServiceDataByUUID(0x181a, serviceDataLength);
+  if (serviceData == nullptr) return EnumBTResult::Unknown;
+  if (buffer == nullptr) return EnumBTResult::Resolved;
 
   const char* model = "LYWSD03MMC";
-  if (addDiscoveryBlocks(buffer, Discovery::_listVoltBattHumTempC, mac, "MiJia ", model, "Xiaomi, Telink", "pvvx") != 0) return EnumBTResult::SmallBuffer;
+  if (addDiscoveryBlocks(*buffer, Discovery::_listVoltBattHumTempC, packet._mac, "MiJia ", model, "Xiaomi, Telink", "pvvx") != 0) return EnumBTResult::SmallBuffer;
 
-  if (buffer.getFreeBlocks() < 5) return EnumBTResult::SmallBuffer;
-  buffer.nextToWrite(edf__topic, edt_Topic, etitBT, eeiCacheDeviceMAC48).setMAC48(mac);
-  buffer.nextToWrite(edf_tempc, edt_Float, 2 + etiDoubleField, edf_hum).setFloat(getBufferValue(serviceData + 6, 2) / 100.f, getBufferValue(serviceData + 8, 2) / 100.f);
-  buffer.nextToWrite(edf_batt, edt_32, 0).set32(getBufferValue(serviceData + 12, 1));
-  buffer.nextToWrite(edf_volt, edt_Float, 3).setFloat(getBufferValue(serviceData + 10, 2) / 1000.f);
-  buffer.nextToWrite(edf_model, edt_String, 0).setPtr((const char*)model);
+  if (buffer->getFreeBlocks() < 5) return EnumBTResult::SmallBuffer;
+  buffer->nextToWrite(edf__topic, edt_Topic, etitBT, eeiCacheDeviceMAC48).setMAC48(packet._mac);
+  buffer->nextToWrite(edf_tempc, edt_Float, 2 + etiDoubleField, edf_hum).setFloat(getBufferValue(serviceData + 6, 2) / 100.f, getBufferValue(serviceData + 8, 2) / 100.f);
+  buffer->nextToWrite(edf_batt, edt_32, 0).set32(getBufferValue(serviceData + 12, 1));
+  buffer->nextToWrite(edf_volt, edt_Float, 3).setFloat(getBufferValue(serviceData + 10, 2) / 1000.f);
+  buffer->nextToWrite(edf_model, edt_String, 0).setPtr((const char*)model);
   return EnumBTResult::Resolved;
 }
 

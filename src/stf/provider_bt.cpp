@@ -22,6 +22,7 @@
 #include <stf/data_feeder.h>
 #include <stf/data_cache.h>
 #include <stf/bt_device.h>
+#include <stf/util.h>
 
 #include <NimBLEDevice.h>
 #include <unordered_set>
@@ -60,101 +61,69 @@ void BTProvider::generateBTBlocks(DataFeeder& feeder, const DataBlock& generator
     feeder.nextToWrite(edf_distance, edt_Float, 2).setFloat(beaconDistance(rssi, txpw));
   }
 
-  uint32_t uuid32 = generatorBlock._value.t32[1];
-  feeder.nextToWrite(edf_servicedatauuid, edt_Hex32, etihPrefix + (uuid32 <= 0xffff ? 4 : 8)).set32(uuid32);
+  feeder.nextToWrite(edf_bt_adv_type, edt_32, 1).set32(generatorBlock._value.t8[4]);
+  feeder.nextToWrite(edf_bt_addr_type, edt_32, 1).set32(generatorBlock._value.t8[5]);
 }
 
 class BTProviderDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
-  void toBuffer(char* buffer_, uint size_, const std::string& str_) {
-    uint len = 0;
-    for (int jdx = 0, jen = str_.length(); jdx < jen; jdx++) len += snprintf(buffer_ + len, size_ - len, "%02x", (unsigned char)str_[jdx]);
-    buffer_[len < size_ ? len : size_ - 1] = 0;
-  }
-
-  void onResult(NimBLEAdvertisedDevice* ble_device_) {
+  void onResult(NimBLEAdvertisedDevice* bleDevice) {
     STFLED_COMMAND(STFLEDEVENT_BLE_RECEIVE);
 
     BTProvider::_discoveryList.updateDevices();
     g_BTProviderObj._packetsScanned++;
 
-    // The NimBLE interface seems to like copy and alloc as much as possible...
-    NimBLEAddress addr = ble_device_->getAddress();
-    const uint8_t* macNat = addr.getNative();
-    uint8_t mac[6];
-    uint8_t macType = addr.getType();
-    for (int idx = 0; idx < 6; idx++) mac[idx] = macNat[5 - idx]; // Reverse it to the proper order..
+    NimBLEAddress addr = bleDevice->getAddress();
+    BTPacket packet(bleDevice->getAdvType(), addr.getType(), addr.getNative(), bleDevice->getPayload(), bleDevice->getPayloadLength(), bleDevice->haveRSSI() ? bleDevice->getRSSI() : 127);
 
-      // For test - filter
+    // For test - filter
+    DataBuffer* resolveBuffer = g_bufferBTProvider;
 #ifdef STFBLE_TEST_MAC
-    if (mac[5] != (STFBLE_TEST_MAC)) return;
+    if (packet._mac[5] != (STFBLE_TEST_MAC)) resolveBuffer = nullptr; //return;
 #endif
 #ifdef STFBLE_TEST_XOR
     // Not perfect as service data may contain the mac and we don't change that
-    mac[5] ^= STFBLE_TEST_XOR;
+    packet._mac[5] ^= STFBLE_TEST_XOR;
 #endif
 
     int statFreeBlocksBegin = g_bufferBTProvider->getFreeBlocks();
-    uint sdCount = ble_device_->getServiceDataCount();
-    for (uint sdidx = 0; sdidx < sdCount; sdidx++) {
-      std::string data = ble_device_->getServiceData(sdidx);
-      NimBLEUUID uuid = ble_device_->getServiceDataUUID(sdidx);
+    EnumBTResult res = BTResolver::resolve(resolveBuffer, packet);
+    if (res == EnumBTResult::Resolved && resolveBuffer == nullptr) res = EnumBTResult::Disabled;
 
-      uint8_t bs = uuid.bitSize();
-      EnumBTResult res = EnumBTResult::Unknown;
-      if (bs == 16 || bs == 32) { // We support only 16 or 32 bit uuid
-        uint32_t uuid32 = bs == 16 ? (uint32_t)uuid.getNative()->u16.value : uuid.getNative()->u32.value;
-        const uint8_t* serviceDataBuffer = (const uint8_t*)data.data();
-        uint serviceDataLength = data.length();
-        res = BTResolver::resolve(mac, macType, uuid32, serviceDataBuffer, serviceDataLength, *g_bufferBTProvider);
-        if (res != EnumBTResult::Resolved) {
-          const char* msg = res == EnumBTResult::Unknown ? "Unknown " : "No buffer for the";
-          STFLOG_WARNING("%s message type %0x from %02x%02x%02x%02x%02x%02x\n", msg, uuid32, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-        } else {
-          // Finish the buffer
-          uint freeBlocks = g_bufferBTProvider->getFreeBlocks();
+    static const char* resMsg[] = {"(Resolved)", "(Unknown) ", "(NoBuffer)", "(Disabled)", "(InvalidR)"};
+    packet.log(resMsg[res >= EnumBTResult::Resolved && res <= EnumBTResult::Disabled ? (int)res : 1]);
+    if (res == EnumBTResult::Disabled) return;
 
-          if (freeBlocks >= 1) { // Generator function for 4-5 elements
-            int8_t txpw = ble_device_->haveTXPower() ? ble_device_->getTXPower() : 127;
-            int rssiInt = ble_device_->haveRSSI() ? ble_device_->getRSSI() : 127;
-            int8_t rssi = rssiInt < -128 ? -128 : (rssiInt > 127 ? 127 : (int8_t)rssiInt);
-            DataBlock& genBlock = g_bufferBTProvider->nextToWrite(edf__none, edt_Generator, rssi).setPtr((const void*)&BTProvider::generateBTBlocks);
-            genBlock._value.t32[1] = uuid32;
-            genBlock._extra = txpw;
-          }
-
-          if (freeBlocks >= 1 && freeBlocks >= (serviceDataLength + 8) / 9) {
-            EnumDataField fld = edf_servicedata;
-            for (uint cpy; serviceDataLength > 0 || fld == edf_servicedata; serviceDataBuffer += cpy, serviceDataLength -= cpy, fld = edf__cont) {
-              cpy = serviceDataLength > sizeof(DataBlock::_value) + sizeof(DataBlock::_extra) ? sizeof(DataBlock::_value) + sizeof(DataBlock::_extra) : serviceDataLength;
-              g_bufferBTProvider->nextToWrite(fld, edt_Raw, cpy + etirFormatHexLower).setRaw(serviceDataBuffer, cpy);
-            }
-            //freeBlocks = btBuffer.getFreeBlocks();
-          }
-
-          int statFreeBlocksEnd = g_bufferBTProvider->getFreeBlocks();
-          g_bufferBTProvider->closeMessage();
-          g_BTProviderObj._packetsForwarded++;
-          STFLOG_INFO("Total blocks used for the BT messages: %u\n", statFreeBlocksBegin - statFreeBlocksEnd); // not correct, will need fix
-        }
-      }
+    uint freeBlocks = g_bufferBTProvider->getFreeBlocks();
+    if (!g_BTProviderObj._packetsFilterUnknown && res == EnumBTResult::Unknown && freeBlocks >= 1) {
+      g_bufferBTProvider->nextToWrite(edf__topic, edt_Topic, etitBT, eeiCacheDeviceMAC48).setMAC48(packet._mac);
+      res = EnumBTResult::Resolved;
+      freeBlocks--;
     }
 
-    char buffer[260];
-    toBuffer(buffer, sizeof(buffer), ble_device_->getManufacturerData());
-    Serial.printf("Address: %s - Name: %s - Manufacturer: %s - RSSI: %d - UUID count: %u - Payload: %u\n",
-                  ble_device_->getAddress().toString().c_str(),
-                  ble_device_->getName().c_str(),
-                  buffer,
-                  ble_device_->getRSSI(),
-                  ble_device_->getServiceUUIDCount(),
-                  (uint)ble_device_->getPayloadLength());
-    int cnt = ble_device_->getServiceDataCount();
-    for (int idx = 0; idx < cnt; idx++) {
-      NimBLEUUID uuid = ble_device_->getServiceDataUUID(idx);
-      uint bs = uuid.bitSize();
-      std::string str = ble_device_->getServiceData(idx);
-      toBuffer(buffer, sizeof(buffer), str);
-      Serial.printf("Address: %s UUID (%d) %s DATA (%d) %s\n", ble_device_->getAddress().toString().c_str(), bs, std::string(uuid).c_str(), str.length(), buffer);
+    if (res == EnumBTResult::Resolved) { // Finish the buffer
+      if (freeBlocks >= 1) { // Generator function for extra elements
+        uint len;
+        const uint8_t* field = packet.getField(0x0a, len); // TXPower
+        int8_t txpw = len == 1 ? field[0] : 127;
+        DataBlock& genBlock = g_bufferBTProvider->nextToWrite(edf__none, edt_Generator, packet._rssi).setPtr((const void*)&BTProvider::generateBTBlocks);
+        genBlock._extra = txpw;
+        genBlock._value.t8[4] = packet._advType;
+        genBlock._value.t8[5] = packet._macType;
+        freeBlocks--;
+      }
+      if (freeBlocks >= 1 && freeBlocks >= (packet._payloadLength + 8) / 9) {
+        EnumDataField fld = edf_bt_payload;
+        uint len = packet._payloadLength;
+        const uint8_t* buff = packet._payloadBuffer;
+        for (uint cpy; len > 0 || fld == edf_bt_payload; buff += cpy, len -= cpy, fld = edf__cont) {
+          cpy = len > sizeof(DataBlock::_value) + sizeof(DataBlock::_extra) ? sizeof(DataBlock::_value) + sizeof(DataBlock::_extra) : len;
+          g_bufferBTProvider->nextToWrite(fld, edt_Raw, cpy + etirFormatHexLower).setRaw(buff, cpy);
+        }
+      }
+      int statFreeBlocksEnd = g_bufferBTProvider->getFreeBlocks();
+      g_bufferBTProvider->closeMessage();
+      g_BTProviderObj._packetsForwarded++;
+      STFLOG_INFO("Total blocks used for the BT messages: %u\n", statFreeBlocksBegin - statFreeBlocksEnd); // not correct, will need fix
     }
   }
 } g_bleCallback;
@@ -192,14 +161,25 @@ uint BTProvider::loop() {
 
 const DiscoveryBlock BTProvider::_received = {edf_bt_scanned, edcSensor, eecDiagnostic, "BT Packets Scanned", "Hz", nullptr};
 const DiscoveryBlock BTProvider::_transmitted = {edf_bt_forwarded, edcSensor, eecDiagnostic, "BT Packets Forwarded", "Hz", nullptr};
-const DiscoveryBlock* BTProvider::_listSystem[] = {&_received, &_transmitted, nullptr};
+const DiscoveryBlock BTProvider::_filterUnknown = {edf_bt_filter_unknown, edcSwitch, eecConfig, "BT Filter Unknown Messages", nullptr, nullptr};
+const DiscoveryBlock* BTProvider::_listSystemNormal[] = {&_received, &_transmitted, nullptr};
+const DiscoveryBlock* BTProvider::_listSystemRetained[] = {&_filterUnknown, nullptr};
 
 uint BTProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESystemMessageType type) {
   uint res = 0;
   switch (type) {
     case ESystemMessageType::Discovery:
-      res = Discovery::addBlocks(systemBuffer, etitSYS, _listSystem);
+      res = Discovery::addBlocks(systemBuffer, etitSYS, _listSystemNormal);
+      res += Discovery::addBlocks(systemBuffer, etitSYSR, _listSystemRetained);
       break;
+    case ESystemMessageType::Retained:
+      res = 1;
+      if (systemBuffer != nullptr && systemBuffer->getFreeBlocks() >= res) {
+        systemBuffer->nextToWrite(edf_bt_filter_unknown, edt_String, etisSource0Ptr).setPtr(_packetsFilterUnknown ? "ON" : "OFF");
+        res = 0;
+      }
+      break;
+
     case ESystemMessageType::Normal:
       res = 2;
       if (systemBuffer != nullptr && systemBuffer->getFreeBlocks() >= res) {
@@ -215,6 +195,98 @@ uint BTProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESyste
       break;
   }
   return res;
+}
+
+void BTProvider::feedback(const FeedbackInfo& info) {
+  handleSimpleFeedback(info, "BT FilterUnknown", edf_bt_filter_unknown, _packetsFilterUnknown);
+}
+
+// BTPacket
+BTPacket::BTPacket(uint8_t advType, uint8_t macType, const uint8_t* mac, const uint8_t* payload, uint payloadLength, int rssi) {
+  _payloadBuffer = payload;
+  _payloadLength = payloadLength;
+  for (int idx = 0; idx < 6; idx++) _mac[idx] = mac[5 - idx]; // Reverse it to the proper order..
+  _macType = macType;
+  _advType = advType;
+  _rssi = rssi < -128 ? -128 : (rssi > 127 ? 127 : (int8_t)rssi);
+}
+
+void BTPacket::log(const char* extraMsg, int level, bool endl) const {
+  if (STFLOG_LEVEL < level) return;
+
+  STFLOG_PRINT("BT packet %s AdvType: %u - AddrType %u", extraMsg, _advType, _macType);
+  STFLOG_PRINT(" - Address: %02x:%02x:%02x:%02x:%02x:%02x - RSSI: %4d - Payload(%u): ",
+               _mac[0], _mac[1], _mac[2], _mac[3], _mac[4], _mac[5], _rssi, _payloadLength);
+  logPayload(level, endl);
+}
+
+void BTPacket::logPayload(int level, bool endl) const {
+  if (STFLOG_LEVEL < level) return;
+  const uint8_t* buffer = _payloadBuffer;
+  uint len = _payloadLength, slen, hlen;
+  for (; 0 < len; buffer += hlen, len -= hlen) {
+    slen = 1 + *buffer;
+    hlen = slen <= len ? slen : len;
+    Util::writeHexToLog(buffer, hlen);
+    if (slen != len) STFLOG_WRITE(slen < len ? ' ' : '.');
+  }
+  if (endl) STFLOG_WRITE('\n');
+}
+
+const uint8_t* BTPacket::getServiceDataByUUID(uint32_t uuid, uint& len) const {
+  uint16_t u16 = uuid < 65536 ? (uint16_t)uuid : 0; // 0 is invalid uuid16
+  uint buffLen = _payloadLength;
+  const uint8_t* buffPtr = _payloadBuffer;
+  while (buffLen >= 4) {
+    uint slen = buffPtr[0] + 1;
+    if (slen > buffLen) slen = buffLen;
+    if (slen >= len + 4 && buffPtr[1] == 0x16 && u16 == *(uint16_t*)(buffPtr + 2)) {
+      len = slen - 4;
+      return buffPtr + 4;
+    }
+    if (slen >= len + 6 && buffPtr[1] == 0x20 && uuid == *(uint32_t*)(buffPtr + 2)) {
+      len = slen - 6;
+      return buffPtr + 6;
+    }
+    buffPtr += slen;
+    buffLen -= slen;
+  }
+  len = 0;
+  return nullptr;
+}
+
+const uint8_t* BTPacket::getField(uint8_t type, uint& len, int idx) {
+  uint buffLen = _payloadLength;
+  const uint8_t* buffPtr = _payloadBuffer;
+  while (buffLen >= 2) {
+    uint slen = buffPtr[0] + 1;
+    if (slen > buffLen) slen = buffLen;
+    if (slen >= 2 && buffPtr[1] == type && 0 == idx--) {
+      len = slen - 2;
+      return buffPtr + 2;
+    }
+    buffPtr += slen;
+    buffLen -= slen;
+  }
+  len = 0;
+  return nullptr;
+}
+
+uint BTPacket::countField(uint8_t type) {
+  uint buffLen = _payloadLength, count = 0;
+  const uint8_t* buffPtr = _payloadBuffer;
+  while (buffLen >= 2) {
+    uint slen = buffPtr[0] + 1;
+    if (slen > buffLen) slen = buffLen;
+    if (slen >= 1 && buffPtr[1] == type) count++;
+    buffPtr += slen;
+    buffLen -= slen;
+  }
+  return count;
+}
+
+bool BTPacket::checkMAC(uint8_t type, uint8_t m0, uint8_t m1, uint8_t m2) const {
+  return _macType == type && _mac[0] == m0 && _mac[1] == m1 && _mac[2] == m2;
 }
 
 } // namespace stf

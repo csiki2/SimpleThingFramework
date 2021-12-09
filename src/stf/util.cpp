@@ -31,11 +31,12 @@ void Log::connecting(const char* name, uint tryNum) {
 }
 
 void Log::memoryUsage(int level) {
+  if (STFLOG_LEVEL < level) return;
   uint32_t heap = ESP.getFreeHeap();
-  STFLOG_PRINT(level, "memory used/free %6u/%6u\n", Host::_startingFreeHeap - heap, heap);
+  STFLOG_PRINT("memory used/free %6u/%6u\n", Host::_startingFreeHeap - heap, heap);
 }
 
-int Helper::getArrayIndex(const char* str, uint strLen, const char* arr[], uint arrLen) {
+int Util::getArrayIndex(const char* str, uint strLen, const char* arr[], uint arrLen) {
   if (str == nullptr) return -1;
   for (uint idx = 0; idx < arrLen; idx++) {
     const char* cmp = arr[idx];
@@ -44,16 +45,35 @@ int Helper::getArrayIndex(const char* str, uint strLen, const char* arr[], uint 
   return -1;
 }
 
-const char* Helper::strchr(const char* strB, const char* strE, const char fnd) {
+const char* Util::strchr(const char* strB, const char* strE, const char fnd) {
   for (; strB < strE; strB++)
     if (*strB == fnd) return strB;
   return nullptr;
 }
 
-const char* Helper::stranychr(const char* strB, const char* strE, const char* fnd) {
+const char* Util::stranychr(const char* strB, const char* strE, const char* fnd) {
   for (; strB < strE; strB++)
     if (::strchr(fnd, *strB) != nullptr) return strB;
   return nullptr;
+}
+
+void Util::writeHexToLog(const uint8_t* src, uint len, char hex10) {
+  for (uint idx = 0; idx < len; idx++) {
+    uint8_t chr = src[idx];
+    uint8_t chr0 = chr >> 4, chr1 = chr & 15;
+    STFLOG_WRITE(chr0 >= 10 ? chr0 + hex10 - (uint8_t)10 : chr0 + '0');
+    STFLOG_WRITE(chr1 >= 10 ? chr1 + hex10 - (uint8_t)10 : chr1 + '0');
+  }
+}
+
+void Util::writeHexToBuffer(uint8_t* buffer, const uint8_t* src, uint len, char hex10) {
+  for (uint idx = 0; idx < len; idx++) {
+    uint8_t chr = src[idx];
+    uint8_t chr0 = chr >> 4, chr1 = chr & 15;
+    buffer[0] = chr0 >= 10 ? chr0 + hex10 - (uint8_t)10 : chr0 + '0';
+    buffer[1] = chr1 >= 10 ? chr1 + hex10 - (uint8_t)10 : chr1 + '0';
+    buffer += 2;
+  }
 }
 
 } // namespace stf

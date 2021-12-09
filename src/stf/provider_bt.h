@@ -26,6 +26,28 @@ class DiscoveryBlock;
 class BTDeviceGroup;
 class DataFeeder;
 
+class BTPacket {
+public:
+  BTPacket(uint8_t advType, uint8_t macType, const uint8_t* mac, const uint8_t* payload, uint payloadLength, int rssi);
+
+  void log(const char* extraMsg = "", int level = STFLOG_LEVEL_INFO, bool endl = true) const;
+  void logPayload(int level = STFLOG_LEVEL_INFO, bool endl = true) const;
+
+  // len input: expected minimum length, len output: result length
+  const uint8_t* getServiceDataByUUID(uint32_t uuid, uint& len) const;
+  const uint8_t* getField(uint8_t type, uint& len, int idx = 0);
+  uint countField(uint8_t type);
+  bool checkMAC(uint8_t type, uint8_t m0, uint8_t m1, uint8_t m2) const;
+
+  const uint8_t* _payloadBuffer;
+  uint _payloadLength;
+
+  uint8_t _mac[6];
+  uint8_t _macType;
+  uint8_t _advType;
+  int8_t _rssi;
+};
+
 class BTProvider : public Provider {
 public:
   BTProvider();
@@ -34,6 +56,7 @@ public:
   void setup() override;
 
   uint systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESystemMessageType type) override;
+  void feedback(const FeedbackInfo& info) override;
 
   static double beaconDistance(int rssi, int txPower);
   static void generateBTBlocks(DataFeeder& feeder, const DataBlock& generatorBlock, DataCache& cache);
@@ -41,12 +64,15 @@ public:
   uint32_t _packetLastReset;
   volatile uint16_t _packetsScanned;
   volatile uint16_t _packetsForwarded;
+  bool _packetsFilterUnknown = true;
 
   static const DiscoveryBlock _received;
   static const DiscoveryBlock _transmitted;
+  static const DiscoveryBlock _filterUnknown;
 
   static BTDeviceGroup _discoveryList;
-  static const DiscoveryBlock* _listSystem[];
+  static const DiscoveryBlock* _listSystemNormal[];
+  static const DiscoveryBlock* _listSystemRetained[];
 };
 
 } // namespace stf

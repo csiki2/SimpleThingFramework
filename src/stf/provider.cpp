@@ -21,6 +21,7 @@
 #include <stf/data_feeder.h>
 #include <stf/json_buffer.h>
 #include <stf/provider.h>
+#include <stf/provider_system.h>
 #include <stf/util.h>
 
 namespace stf {
@@ -63,6 +64,20 @@ uint Provider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESystemM
 void Provider::feedback(const FeedbackInfo& info) {
 }
 
+bool Provider::handleSimpleFeedback(const FeedbackInfo& info, const char* name, stf::EnumDataField field, bool& value) {
+  if (info.fieldEnum == field) {
+    bool set = info.payloadLength == 2 && strncmp((const char*)info.payload, "ON", 2) == 0;
+    bool rrq = set != value && strstr(info.topic, "/command/") != nullptr;
+    STFLOG_INFO("%s command detected %u from %u - %*.*s%s\n", name, set, value, info.payloadLength, info.payloadLength, info.payload, rrq ? " - report request" : "");
+    if (set != value) {
+      value = set;
+      if (rrq) SystemProvider::requestRetainedReport();
+      return true;
+    }
+  }
+  return false;
+}
+
 Consumer::Consumer() : _bufferHead(nullptr) {
   _messageCreated = _messageSent = 0;
 }
@@ -93,9 +108,11 @@ bool Consumer::onCloseMessageEvent(JsonBuffer& jsonBuffer, DataCache& cache) {
     // res = false;
     res = send(jsonBuffer, cache._flagRetain);
     if (res) _messageSent++;
-    STFLOG_INFO("Sending %s MQTT message (%s) %s.\n", cache._flagRetain ? "retained" : "", jsonBuffer._buffer + jsonBuffer._jsonSize, res ? "succeeded" : "failed");
+    STFLOG_INFO("Sending %sMQTT message (%s) %s.\n", cache._flagRetain ? "retained " : "", jsonBuffer.getTopic("no topic"), res ? "succeeded" : "failed");
+    jsonBuffer.log(STFLOG_LEVEL_INFO, false);
   } else {
-    STFLOG_INFO("Invalid MQTT message.\n");
+    STFLOG_INFO("Invalid MQTT message (%s).\n", jsonBuffer.getTopic("no topic"));
+    jsonBuffer.log(STFLOG_LEVEL_INFO, false);
   }
   jsonBuffer.start();
   cache.reset();
@@ -169,7 +186,7 @@ void FeedbackInfo::set(const char* topicInput, const uint8_t* payloadInput, unsi
     fieldStr = (idStr != nullptr && (fndB = strchr(idStr, '_')) != nullptr) ? fndB + 1 : "";
     fieldStrLen = strlen(fieldStr);
     idStrLen = fieldStr != nullptr ? fndB - idStr : 0;
-    fieldEnum = (EnumDataField)Helper::getArrayIndex(fieldStr, fieldStrLen, DataField::_list, DataField::_listNum);
+    fieldEnum = (EnumDataField)Util::getArrayIndex(fieldStr, fieldStrLen, DataField::_list, DataField::_listNum);
   } else {
     topicStr = idStr = fieldStr = "";
     topicStrLen = idStrLen = fieldStrLen = 0;
@@ -194,29 +211,29 @@ bool FeedbackInfo::next() {
 
   const char* pe = (const char*)payload;
 
-  fndB = Helper::strchr(str, pe, '"');
+  fndB = Util::strchr(str, pe, '"');
   if (fndB == nullptr) return false;
-  fndE = Helper::strchr(fndB + 1, pe, '"');
+  fndE = Util::strchr(fndB + 1, pe, '"');
   if (fndE == nullptr) return false;
 
   fieldStr = fndB + 1;
   fieldStrLen = fndE - fieldStr;
-  fieldEnum = (EnumDataField)Helper::getArrayIndex(fieldStr, fieldStrLen, DataField::_list, DataField::_listNum);
+  fieldEnum = (EnumDataField)Util::getArrayIndex(fieldStr, fieldStrLen, DataField::_list, DataField::_listNum);
 
-  fndB = Helper::strchr(fndE, pe, ':');
+  fndB = Util::strchr(fndE, pe, ':');
   if (fndB == nullptr) return false;
   while (++fndB < pe && isspace(*fndB))
     ;
   if (fndB == pe || *fndB == '{' || *fndB == '[') return false; // not supported
   if (*fndB != '"') { // Easy case
-    if ((fndE = Helper::stranychr(fndB, pe, ",}")) == nullptr) return false;
+    if ((fndE = Util::stranychr(fndB, pe, ",}")) == nullptr) return false;
     while (fndB < fndE && isspace(fndE[-1])) fndE--;
     payload = (const uint8_t*)fndB;
     payloadLength = fndE - fndB;
     return true;
   }
   for (fndE = ++fndB;;) {
-    if ((fndE = Helper::strchr(fndE, pe, '"')) == nullptr) return false;
+    if ((fndE = Util::strchr(fndE, pe, '"')) == nullptr) return false;
     if (fndE[-1] != '\'') break;
   }
   payload = (const uint8_t*)fndB;

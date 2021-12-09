@@ -19,6 +19,7 @@
 #pragma once
 
 #include <stf/os.h>
+#include <stf/data_buffer.h>
 
 namespace stf {
 
@@ -29,11 +30,14 @@ public:
   static void memoryUsage(int level);
 };
 
-class Helper {
+class Util {
 public:
   static const char* strchr(const char* strB, const char* strE, const char fnd);
   static const char* stranychr(const char* strB, const char* strE, const char* fnd);
   static int getArrayIndex(const char* str, uint strLen, const char* arr[], uint arrLen);
+
+  static void writeHexToLog(const uint8_t* src, uint len, char hex10 = 'a');
+  static void writeHexToBuffer(uint8_t* buffer, const uint8_t* src, uint len, char hex10 = 'a');
 };
 
 template <typename E>

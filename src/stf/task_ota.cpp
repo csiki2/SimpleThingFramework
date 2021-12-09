@@ -73,14 +73,7 @@ uint OTAProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESyst
 }
 
 void OTAProvider::feedback(const FeedbackInfo& info) {
-  if (info.fieldEnum == edf_ota) {
-    bool set = info.payloadLength == 2 && strncmp((const char*)info.payload, "ON", 2) == 0;
-    STFLOG_INFO("OTA command detected %u - %*.*s - %s\n", set, info.payloadLength, info.payloadLength, info.payload, set != _enabled ? "report request" : "no change");
-    if (set != _enabled) {
-      _enabled = set;
-      SystemProvider::requestRetainedReport();
-    }
-  }
+  handleSimpleFeedback(info, "OTA", edf_ota, _enabled);
 }
 
 void OTAProvider::onStart() { STFLOG_WARNING("OTA update is starting.\n"); }

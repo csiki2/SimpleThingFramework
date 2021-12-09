@@ -33,7 +33,7 @@ const char* DataType::_topicNames[] = {
 };
 
 EnumTypeInfoTopic DataType::findTopicName(const char* str, uint strLen) {
-  return (EnumTypeInfoTopic)Helper::getArrayIndex(str, strLen, _topicNames, sizeof(_topicNames) / sizeof(_topicNames[0]));
+  return (EnumTypeInfoTopic)Util::getArrayIndex(str, strLen, _topicNames, sizeof(_topicNames) / sizeof(_topicNames[0]));
 }
 
 int DataType::fnDTNone(char* buffer, uint len, const DataBlock& block, DataCache& cache) {
