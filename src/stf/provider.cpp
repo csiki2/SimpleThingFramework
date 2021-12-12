@@ -22,6 +22,7 @@
 #include <stf/json_buffer.h>
 #include <stf/provider.h>
 #include <stf/provider_system.h>
+#include <stf/data_discovery.h>
 #include <stf/util.h>
 
 namespace stf {
@@ -64,15 +65,22 @@ uint Provider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESystemM
 void Provider::feedback(const FeedbackInfo& info) {
 }
 
-bool Provider::handleSimpleFeedback(const FeedbackInfo& info, const char* name, stf::EnumDataField field, bool& value) {
-  if (info.fieldEnum == field) {
-    bool set = info.payloadLength == 2 && strncmp((const char*)info.payload, "ON", 2) == 0;
-    bool rrq = set != value && strstr(info.topic, "/command/") != nullptr;
-    STFLOG_INFO("%s command detected %u from %u - %*.*s%s\n", name, set, value, info.payloadLength, info.payloadLength, info.payload, rrq ? " - report request" : "");
-    if (set != value) {
-      value = set;
-      if (rrq) SystemProvider::requestRetainedReport();
+bool Provider::handleSimpleFeedback(const FeedbackInfo& info, const DiscoveryBlock& block, bool* value) {
+  if (info.fieldEnum == block._field) {
+    if (block._component == edcButton && info.checkPayload("PRESS")) {
+      if (value != nullptr) *value = true;
+      STFLOG_INFO("%s command detected - %*.*s\n", block._name, info.payloadLength, info.payloadLength, info.payload);
       return true;
+    }
+    if (block._component == edcSwitch) {
+      bool set = info.checkPayload("ON");
+      bool rrq = set != *value && strstr(info.topic, "/command/") != nullptr;
+      STFLOG_INFO("%s command detected %u from %u - %*.*s%s\n", block._name, set, *value, info.payloadLength, info.payloadLength, info.payload, rrq ? " - report request" : "");
+      if (set != *value) {
+        *value = set;
+        if (rrq) SystemProvider::requestRetainedReport();
+        return true;
+      }
     }
   }
   return false;
@@ -239,6 +247,10 @@ bool FeedbackInfo::next() {
   payload = (const uint8_t*)fndB;
   payloadLength = fndE - fndB;
   return true;
+}
+
+bool FeedbackInfo::checkPayload(const char* str) const {
+  return payloadLength == strlen(str) && strncmp((const char*)payload, str, payloadLength) == 0;
 }
 
 } // namespace stf

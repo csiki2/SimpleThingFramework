@@ -65,6 +65,7 @@ public:
   volatile uint16_t _packetsScanned;
   volatile uint16_t _packetsForwarded;
   bool _packetsFilterUnknown = true;
+  bool _forceDiscoveryReset = false;
 
   static const DiscoveryBlock _received;
   static const DiscoveryBlock _transmitted;

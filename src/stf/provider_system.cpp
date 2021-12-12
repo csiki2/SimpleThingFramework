@@ -28,7 +28,7 @@ DEFINE_PROVIDERTASK(SystemProvider, 3, 0, 0);
 SystemProvider::SystemProvider() : Provider(g_bufferSystemProvider) {
 }
 
-const DiscoveryBlock* SystemProvider::_listSystemNormal[] = {&Discovery::_Uptime_S, &Discovery::_Uptime_D, &Discovery::_Free_Memory, nullptr};
+const DiscoveryBlock* SystemProvider::_listSystemNormal[] = {&Discovery::_Discovery_Reset, &Discovery::_Uptime_S, &Discovery::_Uptime_D, &Discovery::_Free_Memory, nullptr};
 const DiscoveryBlock* SystemProvider::_listSystemRetained[] = {&Discovery::_Free_Memory, nullptr};
 
 uint SystemProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESystemMessageType type) {
@@ -60,8 +60,12 @@ uint SystemProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ES
   return res;
 }
 
+void SystemProvider::feedback(const FeedbackInfo& info) {
+  handleSimpleFeedback(info, Discovery::_Discovery_Reset, &_forceDiscoveryReset);
+}
+
 void SystemProvider::requestRetainedReport() {
-  g_SystemProviderObj._forceSystemRetainedReport = true;
+  g_SystemProviderObj._forceRetainedReport = true;
 }
 
 uint SystemProvider::loop() {
@@ -70,9 +74,13 @@ uint SystemProvider::loop() {
   Consumer* cons = g_bufferSystemProvider->getConsumer();
   if (cons == nullptr || !cons->isReady()) return waitTime;
 
-  if (_forceSystemRetainedReport) {
-    _forceSystemRetainedReport = false;
+  if (_forceRetainedReport) {
+    _forceRetainedReport = false;
     _reportRequired += ESystemMessageType::Retained;
+  }
+  if (_forceDiscoveryReset) {
+    _forceDiscoveryReset = false;
+    _reportRequired += ESystemMessageType::Discovery;
   }
 
   uint32_t reportTime = _lastSystemReportTime.elapsedTime();

@@ -78,7 +78,7 @@ class BTProviderDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
     // For test - filter
     DataBuffer* resolveBuffer = g_bufferBTProvider;
 #ifdef STFBLE_TEST_MAC
-    if (packet._mac[5] != (STFBLE_TEST_MAC)) resolveBuffer = nullptr; //return;
+    if (packet._mac[5] != (STFBLE_TEST_MAC)) resolveBuffer = nullptr;
 #endif
 #ifdef STFBLE_TEST_XOR
     // Not perfect as service data may contain the mac and we don't change that
@@ -148,9 +148,10 @@ uint BTProvider::loop() {
   NimBLEScan* scan = NimBLEDevice::getScan();
   bool isScanning = scan->isScanning();
   if (isConsumerReady()) {
-    uint32_t consumerTime = g_bufferBTProvider->getConsumer()->ellapsedTimeSinceReady();
-    uint32_t discoveryTime = _discoveryList._lastReadyTime.elapsedTime();
-    if (discoveryTime > consumerTime) _discoveryList._lastReadyTime.reset();
+    if (_forceDiscoveryReset || _discoveryList._lastReadyTime.elapsedTime() > g_bufferBTProvider->getConsumer()->ellapsedTimeSinceReady()) {
+      _discoveryList._lastReadyTime.reset();
+      _forceDiscoveryReset = false;
+    }
     if (!isScanning) scan->start(0, nullptr, false);
   } else {
     if (isScanning) scan->stop();
@@ -198,7 +199,8 @@ uint BTProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESyste
 }
 
 void BTProvider::feedback(const FeedbackInfo& info) {
-  handleSimpleFeedback(info, "BT FilterUnknown", edf_bt_filter_unknown, _packetsFilterUnknown);
+  handleSimpleFeedback(info, _filterUnknown, &_packetsFilterUnknown);
+  handleSimpleFeedback(info, Discovery::_Discovery_Reset, &_forceDiscoveryReset);
 }
 
 // BTPacket

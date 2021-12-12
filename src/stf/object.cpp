@@ -37,7 +37,6 @@ void Object::init() {
 }
 
 void Object::initObjects() {
-  STFLOG_INFO("Init Objects - start\n");
   std::lock_guard<Mutex> lock(_objectMutex);
   int actPriority, nxtPriority = _objectHead != nullptr ? _objectHead->initPriority() : 0;
   for (Object* obj = _objectHead; obj != nullptr; obj = obj->_objectNext) {
@@ -46,7 +45,6 @@ void Object::initObjects() {
   }
   do {
     actPriority = nxtPriority;
-    STFLOG_INFO("Init Objects - priority %d\n", actPriority);
     for (Object** objPtr = &_objectHead; (*objPtr) != nullptr;) {
       Object* obj = *objPtr;
       Object* next = obj->_objectNext;
@@ -67,7 +65,6 @@ void Object::initObjects() {
       if (priority > actPriority && (actPriority == nxtPriority || priority < nxtPriority)) nxtPriority = priority;
     }
   } while (nxtPriority > actPriority);
-  STFLOG_INFO("Init Objects - end\n");
 }
 
 bool Object::addToList(Object*& head, Mutex& mutex) {

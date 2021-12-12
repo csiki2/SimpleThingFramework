@@ -34,6 +34,7 @@ enum EnumDiscoveryComponent {
   edcSensor = 0,
   edcBinarySensor = 1,
   edcSwitch = 2,
+  edcButton = 3,
 };
 
 enum EnumEntityCategory {
@@ -67,6 +68,7 @@ public:
   static const DiscoveryBlock _Uptime_S;
   static const DiscoveryBlock _Uptime_D;
   static const DiscoveryBlock _Free_Memory;
+  static const DiscoveryBlock _Discovery_Reset;
 
   static const DiscoveryBlock* _listVoltBattHumTempC[];
 

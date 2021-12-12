@@ -29,6 +29,8 @@ struct FeedbackInfo {
   void set(const char* topic, const uint8_t* payload, unsigned int length);
   bool next();
 
+  bool checkPayload(const char* str) const;
+
   const char* topic;
 
   const uint8_t* fullPayload;
@@ -62,6 +64,8 @@ enum class ESystemMessageType : uint8_t {
   All = 7
 };
 
+class DiscoveryBlock;
+
 // The provider feeds data into the buffer
 // Since the buffer is a lockless queue all provider for the same buffer must run on the same task
 class Provider : public Object {
@@ -82,7 +86,7 @@ public:
   static Provider* getNext(Provider* provider, DataBuffer* parentBuffer);
 
 protected:
-  bool handleSimpleFeedback(const FeedbackInfo& info, const char* name, stf::EnumDataField field, bool& value);
+  bool handleSimpleFeedback(const FeedbackInfo& info, const DiscoveryBlock& block, bool* value);
 
   DataBuffer* _parentBuffer;
 

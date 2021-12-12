@@ -33,9 +33,7 @@ MQTTConsumer::MQTTConsumer() : _client(_wifiClient) {
 }
 
 void MQTTConsumer::callback(char* topic, byte* payload, unsigned int length) {
-  if (_obj._messageArrived == 0 && strstr(topic, "/SYSRtoMQTT/") != nullptr) {
-    _obj._messageArrived = 1;
-  }
+  if (_obj._messageArrived == 0 && strstr(topic, "/SYSRtoMQTT/") != nullptr) _obj._messageArrived = 1;
 
   FeedbackInfo info;
   info.set(topic, payload, length);
@@ -73,7 +71,7 @@ void MQTTConsumer::setup() {
 uint32_t MQTTConsumer::loop() {
   if (_client.connected()) {
     STFLED_COMMAND(STFLEDEVENT_MQTT_CONNECTED);
-    if (_messageArrived == 1 || (_messageArrived == 0 && _readyTime.elapsedTime() > 5000)) {
+    if (_messageArrived < 2 && (_messageArrived == 1 || _readyTime.elapsedTime() > 5000)) {
       _messageArrived = 2;
       localSubscribe("home/%s/SYSRtoMQTT/%s", false);
     }

@@ -73,7 +73,7 @@ uint OTAProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESyst
 }
 
 void OTAProvider::feedback(const FeedbackInfo& info) {
-  handleSimpleFeedback(info, "OTA", edf_ota, _enabled);
+  handleSimpleFeedback(info, _switch, &_enabled);
 }
 
 void OTAProvider::onStart() { STFLOG_WARNING("OTA update is starting.\n"); }

@@ -57,11 +57,12 @@ void Discovery::generateBlock(DataFeeder& feeder, const DataBlock& generatorBloc
     feeder.nextToWrite(edf_name, edt_String, etisSource0Ptr).setPtr(discovery._name);
   else
     feeder.nextToWrite(edf_name, edt_String, etisSource0CacheField + etisCaseSmart);
-  if (discovery._component != edcSwitch) // Home Assistant doesn't accept a switch with unit_of_measurement
-    feeder.nextToWrite(edf_unit_of_measurement, edt_String, etisSource0Ptr).setPtr(discovery._measure);
   feeder.nextToWrite(edf_state_topic, edt_Topic, etitState + generatorBlock._typeInfo);
-  if (discovery._component == edcSwitch)
+  if (discovery._component == edcSwitch || discovery._component == edcButton) {
     feeder.nextToWrite(edf_command_topic, edt_Topic, etitCommand + generatorBlock._typeInfo);
+  } else {
+    feeder.nextToWrite(edf_unit_of_measurement, edt_String, etisSource0Ptr).setPtr(discovery._measure);
+  }
   feeder.nextToWrite(edf_unique_id, edt_String, etisSource0MACId + etisSource1CacheField);
   if (discovery._device_class != nullptr) {
     bool useName = strcmp(discovery._device_class, "_") == 0;
@@ -101,6 +102,7 @@ const DiscoveryBlock Discovery::_Volt = {edf_volt, edcSensor, eecDiagnostic, nul
 const DiscoveryBlock Discovery::_Uptime_S = {edf_uptime_s, edcSensor, eecDiagnostic, "Uptime", "s", nullptr};
 const DiscoveryBlock Discovery::_Uptime_D = {edf_uptime_d, edcSensor, eecDiagnostic, "Uptime", "d", nullptr};
 const DiscoveryBlock Discovery::_Free_Memory = {edf_free_memory, edcSensor, eecDiagnostic, nullptr, "B", nullptr};
+const DiscoveryBlock Discovery::_Discovery_Reset = {edf_discovery_reset, edcButton, eecDiagnostic, "Reset Discovery", nullptr, nullptr};
 
 const DiscoveryBlock* Discovery::_listVoltBattHumTempC[] = {&Discovery::_Volt, &Discovery::_Battery, &Discovery::_Humidity, &Discovery::_Temperature_C, nullptr};
 
@@ -108,6 +110,7 @@ const char* Discovery::_topicConfigComponent[] = {
     "sensor", // edcSensor
     "binary_sensor", // edcBinarySensor
     "switch", // edcSwitch
+    "button", // edcButton
 };
 
 const char* Discovery::_entityCategory[] = {

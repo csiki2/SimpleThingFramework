@@ -32,6 +32,7 @@ public:
 
   uint loop() override;
   uint systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESystemMessageType type) override;
+  void feedback(const FeedbackInfo& info) override;
 
   static void requestRetainedReport();
 
@@ -43,7 +44,8 @@ protected:
 
   EnumClassFlags<ESystemMessageType> _reportRequired;
   ElapsedTime _lastSystemReportTime;
-  bool _forceSystemRetainedReport = false;
+  bool _forceRetainedReport = false;
+  bool _forceDiscoveryReset = false;
 };
 
 } // namespace stf
