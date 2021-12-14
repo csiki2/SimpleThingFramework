@@ -23,13 +23,15 @@
 
 namespace stf {
 
-DEFINE_PROVIDERTASK(SystemProvider, 3, 0, 0);
+SystemProvider SystemProvider::_obj;
 
 SystemProvider::SystemProvider() : Provider(g_bufferSystemProvider) {
 }
 
+const DiscoveryBlock SystemProvider::_discoveryLed = {edf_led, edcSwitch, eecConfig, "LED", nullptr, nullptr};
+
 const DiscoveryBlock* SystemProvider::_listSystemNormal[] = {&Discovery::_Discovery_Reset, &Discovery::_Uptime_S, &Discovery::_Uptime_D, &Discovery::_Free_Memory, nullptr};
-const DiscoveryBlock* SystemProvider::_listSystemRetained[] = {&Discovery::_Free_Memory, nullptr};
+const DiscoveryBlock* SystemProvider::_listSystemRetained[] = {&_discoveryLed, nullptr};
 const DiscoveryBlock* SystemProvider::_listSystemConnectivity[] = {&Discovery::_Connectivity, nullptr};
 
 uint SystemProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESystemMessageType type) {
@@ -53,7 +55,7 @@ uint SystemProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ES
       res = 2;
       if (systemBuffer != nullptr && systemBuffer->getFreeBlocks() >= res) {
         systemBuffer->nextToWrite(edf__topic, edt_Topic, etitSYSR + etitRetain, eeiCacheDeviceHost).setPtr(&Host::_info);
-        systemBuffer->nextToWrite(edf_free_memory, edt_32, 0).set32(ESP.getFreeHeap());
+        systemBuffer->nextToWrite(edf_led, edt_String, etisSource0Ptr).setPtr(_enableLed ? "ON" : "OFF");
         res = 0;
       }
     default:
@@ -64,10 +66,11 @@ uint SystemProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ES
 
 void SystemProvider::feedback(const FeedbackInfo& info) {
   handleSimpleFeedback(info, Discovery::_Discovery_Reset, &_forceDiscoveryReset);
+  handleSimpleFeedback(info, _discoveryLed, &_enableLed);
 }
 
 void SystemProvider::requestRetainedReport() {
-  g_SystemProviderObj._forceRetainedReport = true;
+  SystemProvider::_obj._forceRetainedReport = true;
 }
 
 uint SystemProvider::loop() {

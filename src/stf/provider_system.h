@@ -35,18 +35,24 @@ public:
   void feedback(const FeedbackInfo& info) override;
 
   static void requestRetainedReport();
+  static inline bool isLedEnabled() { return _obj._enableLed; }
 
+protected:
+  static SystemProvider _obj;
   static const DiscoveryBlock* _listSystemNormal[];
   static const DiscoveryBlock* _listSystemRetained[];
   static const DiscoveryBlock* _listSystemConnectivity[];
 
-protected:
   bool generateSystemReport(DataBuffer* systemBuffer, ESystemMessageType type);
 
   EnumClassFlags<ESystemMessageType> _reportRequired;
   ElapsedTime _lastSystemReportTime;
   bool _forceRetainedReport = false;
   bool _forceDiscoveryReset = false;
+
+  bool _enableLed = true;
+
+  static const DiscoveryBlock _discoveryLed;
 };
 
 } // namespace stf

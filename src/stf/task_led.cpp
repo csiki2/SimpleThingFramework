@@ -21,6 +21,7 @@
 #if STFTASK_LED == 1
 
 #  include <stf/task.h>
+#  include <stf/provider_system.h>
 
 #  include <driver/ledc.h>
 #  include <mutex>
@@ -156,6 +157,7 @@ void LedTask::ledPlayDirect(int8_t led, int8_t chn, uint8_t brightness, LedSampl
 }
 
 void LedTask::setLed(int idx, int value) {
+  if (!SystemProvider::isLedEnabled()) value = 0;
   if (ledPWM[idx] > 15)
     digitalWrite(ledPins[idx], value < 128 ? LOW : HIGH);
   else
