@@ -43,10 +43,11 @@ uint SystemProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ES
       res += Discovery::addBlocks(systemBuffer, etitCONN, _listSystemConnectivity, eeiNone, nullptr, Host::_name, "Test", "community", "0.01");
       break;
     case ESystemMessageType::Normal:
-      res = 3;
+      res = 4;
       if (systemBuffer != nullptr && systemBuffer->getFreeBlocks() >= res) {
         systemBuffer->nextToWrite(edf__topic, edt_Topic, etitSYS, eeiCacheDeviceHost).setPtr(&Host::_info);
         systemBuffer->nextToWrite(edf_uptime_s, edt_32, 0 + etiDoubleField, edf_uptime_d).set32(uptimeS, uptimeS / (24 * 60 * 60));
+        systemBuffer->nextToWrite(edf_free_memory, edt_32, 0).set32(ESP.getFreeHeap());
         systemBuffer->nextToWrite(edf_ip, edt_Raw, 4 + etirSeparatorDot + etirFormatNumber).setRaw(Host::_ip4, 4);
         res = 0;
       }
