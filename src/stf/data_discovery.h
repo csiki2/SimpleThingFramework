@@ -50,7 +50,9 @@ struct DiscoveryBlock {
   EnumEntityCategory _category : 4;
   const char* _name;
   const char* _measure;
-  const char* _device_class;
+  const char* _deviceClass;
+
+  const char* getName() const;
 };
 
 class Discovery {
@@ -69,6 +71,7 @@ public:
   static const DiscoveryBlock _Uptime_D;
   static const DiscoveryBlock _Free_Memory;
   static const DiscoveryBlock _Discovery_Reset;
+  static const DiscoveryBlock _Connectivity;
 
   static const DiscoveryBlock* _listVoltBattHumTempC[];
 

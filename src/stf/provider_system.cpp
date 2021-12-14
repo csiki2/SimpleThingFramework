@@ -30,6 +30,7 @@ SystemProvider::SystemProvider() : Provider(g_bufferSystemProvider) {
 
 const DiscoveryBlock* SystemProvider::_listSystemNormal[] = {&Discovery::_Discovery_Reset, &Discovery::_Uptime_S, &Discovery::_Uptime_D, &Discovery::_Free_Memory, nullptr};
 const DiscoveryBlock* SystemProvider::_listSystemRetained[] = {&Discovery::_Free_Memory, nullptr};
+const DiscoveryBlock* SystemProvider::_listSystemConnectivity[] = {&Discovery::_Connectivity, nullptr};
 
 uint SystemProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESystemMessageType type) {
   uint res = 0;
@@ -37,6 +38,7 @@ uint SystemProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ES
     case ESystemMessageType::Discovery:
       res = Discovery::addBlocks(systemBuffer, etitSYS, _listSystemNormal, eeiNone, nullptr, Host::_name, "Test", "community", "0.01");
       res += Discovery::addBlocks(systemBuffer, etitSYSR, _listSystemRetained, eeiNone, nullptr, Host::_name, "Test", "community", "0.01");
+      res += Discovery::addBlocks(systemBuffer, etitCONN, _listSystemConnectivity, eeiNone, nullptr, Host::_name, "Test", "community", "0.01");
       break;
     case ESystemMessageType::Normal:
       res = 3;

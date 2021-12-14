@@ -23,6 +23,10 @@
 
 namespace stf {
 
+const char* DiscoveryBlock::getName() const {
+  return _name != nullptr ? _name : DataField::_list[_field];
+}
+
 uint Discovery::addBlocks(DataBuffer* buffer, uint8_t topic, const DiscoveryBlock** list, EnumExtraInfo cacheCmd, const void* cacheValue, const char* device_name, const char* device_model, const char* device_manufacturer, const char* device_sw) {
   bool bl1 = device_name != nullptr || device_model != nullptr;
   bool bl2 = device_manufacturer != nullptr || device_sw != nullptr;
@@ -64,9 +68,9 @@ void Discovery::generateBlock(DataFeeder& feeder, const DataBlock& generatorBloc
     feeder.nextToWrite(edf_unit_of_measurement, edt_String, etisSource0Ptr).setPtr(discovery._measure);
   }
   feeder.nextToWrite(edf_unique_id, edt_String, etisSource0MACId + etisSource1CacheField);
-  if (discovery._device_class != nullptr) {
-    bool useName = strcmp(discovery._device_class, "_") == 0;
-    feeder.nextToWrite(edf_device_class, edt_String, etisSource0Ptr + (useName ? etisCaseLower : 0)).setPtr((void*)useName ? discovery._name : discovery._device_class);
+  if (discovery._deviceClass != nullptr) {
+    bool useName = strcmp(discovery._deviceClass, "_") == 0;
+    feeder.nextToWrite(edf_device_class, edt_String, etisSource0Ptr + (useName ? etisCaseLower : 0)).setPtr((void*)useName ? discovery.getName() : discovery._deviceClass);
   }
   if (discovery._category != eecPrimary) feeder.nextToWrite(edf_entity_category, edt_String, etisSource0Ptr).setPtr(_entityCategory[discovery._category]);
   feeder.nextToWrite(edf_value_template, edt_String, etisSource0FmtPtr + etisSource1CacheField).setPtr("{{ value_json.%s | is_defined }}");
@@ -103,6 +107,7 @@ const DiscoveryBlock Discovery::_Uptime_S = {edf_uptime_s, edcSensor, eecDiagnos
 const DiscoveryBlock Discovery::_Uptime_D = {edf_uptime_d, edcSensor, eecDiagnostic, "Uptime", "d", nullptr};
 const DiscoveryBlock Discovery::_Free_Memory = {edf_free_memory, edcSensor, eecDiagnostic, nullptr, "B", nullptr};
 const DiscoveryBlock Discovery::_Discovery_Reset = {edf_discovery_reset, edcButton, eecDiagnostic, "Reset Discovery", nullptr, nullptr};
+const DiscoveryBlock Discovery::_Connectivity = {edf_connectivity, edcBinarySensor, eecDiagnostic, nullptr, nullptr, "_"};
 
 const DiscoveryBlock* Discovery::_listVoltBattHumTempC[] = {&Discovery::_Volt, &Discovery::_Battery, &Discovery::_Humidity, &Discovery::_Temperature_C, nullptr};
 

@@ -86,7 +86,11 @@ uint32_t MQTTConsumer::loop() {
       _connectionTry++;
       _readyTime.reset();
       Log::connecting("MQTT server", _connectionTry);
-      if (_client.connect(Host::_name, NetTask::_mqttUser, NetTask::_mqttPassword)) {
+      const char* willTopicFormat = "home/%s/%stoMQTT/%s";
+      char willTopic[strlen(willTopicFormat) + strlen(Host::_name) + strlen(DataType::_topicNames[etitCONN]) + strlen(Host::_info.strId)];
+      sprintf(willTopic, willTopicFormat, Host::_name, DataType::_topicNames[etitCONN], Host::_info.strId);
+      if (_client.connect(Host::_name, NetTask::_mqttUser, NetTask::_mqttPassword, willTopic, 0, true, R"({"connectivity":"OFF"})")) {
+        _client.publish(willTopic, R"({"connectivity":"ON"})", true);
         Log::connected("MQTT server");
         _connectionTry = 0;
         _readyTime.reset();

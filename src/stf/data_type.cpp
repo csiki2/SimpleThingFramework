@@ -27,13 +27,16 @@
 namespace stf {
 
 const char* DataType::_topicNames[] = {
+    "NONE", // etitNONE
+    "CONN", // etitCONN
     "SYS", // etitSYS
     "SYSR", // etitSYSR
     "BT", // etitBT
 };
 
 EnumTypeInfoTopic DataType::findTopicName(const char* str, uint strLen) {
-  return (EnumTypeInfoTopic)Util::getArrayIndex(str, strLen, _topicNames, sizeof(_topicNames) / sizeof(_topicNames[0]));
+  int idx = Util::getArrayIndex(str, strLen, _topicNames, sizeof(_topicNames) / sizeof(_topicNames[0]));
+  return (EnumTypeInfoTopic)(idx >= 0 ? idx : 0);
 }
 
 int DataType::fnDTNone(char* buffer, uint len, const DataBlock& block, DataCache& cache) {

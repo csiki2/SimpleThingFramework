@@ -58,9 +58,11 @@ enum EnumTypeInfoSupport {
 };
 
 enum EnumTypeInfoTopic {
-  etitSYS = 0,
-  etitSYSR = 1,
-  etitBT = 2,
+  etitNONE = 0,
+  etitCONN = 1,
+  etitSYS = 2,
+  etitSYSR = 3,
+  etitBT = 4,
 
   etitTopicSubjectMask = 7,
 

@@ -69,13 +69,13 @@ bool Provider::handleSimpleFeedback(const FeedbackInfo& info, const DiscoveryBlo
   if (info.fieldEnum == block._field) {
     if (block._component == edcButton && info.checkPayload("PRESS")) {
       if (value != nullptr) *value = true;
-      STFLOG_INFO("%s command detected - %*.*s\n", block._name, info.payloadLength, info.payloadLength, info.payload);
+      STFLOG_INFO("%s command detected - %*.*s\n", block.getName(), info.payloadLength, info.payloadLength, info.payload);
       return true;
     }
     if (block._component == edcSwitch) {
       bool set = info.checkPayload("ON");
       bool rrq = set != *value && strstr(info.topic, "/command/") != nullptr;
-      STFLOG_INFO("%s command detected %u from %u - %*.*s%s\n", block._name, set, *value, info.payloadLength, info.payloadLength, info.payload, rrq ? " - report request" : "");
+      STFLOG_INFO("%s command detected %u from %u - %*.*s%s\n", block.getName(), set, *value, info.payloadLength, info.payloadLength, info.payload, rrq ? " - report request" : "");
       if (set != *value) {
         *value = set;
         if (rrq) SystemProvider::requestRetainedReport();
@@ -183,7 +183,7 @@ void FeedbackInfo::set(const char* topicInput, const uint8_t* payloadInput, unsi
     retained = true;
     fieldStr = "";
     fieldStrLen = 0;
-    fieldEnum = (EnumDataField)-1;
+    fieldEnum = EnumDataField::edf__none;
     payloadLength = 0;
   } else if ((fndB = strstr(topic, "/MQTTto")) != nullptr && (fndE = strchr(fndB + 1, '/')) != nullptr) {
     // Received MQTT message (home/SimpleThing_Test/MQTTtoSYSR/EspDJ_AABBCC/command/AC67B2AABBCC_ota) [SYSR|AC67B2AABBCC|ota][1|19] - ON
@@ -194,12 +194,13 @@ void FeedbackInfo::set(const char* topicInput, const uint8_t* payloadInput, unsi
     fieldStr = (idStr != nullptr && (fndB = strchr(idStr, '_')) != nullptr) ? fndB + 1 : "";
     fieldStrLen = strlen(fieldStr);
     idStrLen = fieldStr != nullptr ? fndB - idStr : 0;
-    fieldEnum = (EnumDataField)Util::getArrayIndex(fieldStr, fieldStrLen, DataField::_list, DataField::_listNum);
+    int idx = Util::getArrayIndex(fieldStr, fieldStrLen, DataField::_list, DataField::_listNum);
+    fieldEnum = (EnumDataField)(idx >= 0 ? idx : 0);
   } else {
     topicStr = idStr = fieldStr = "";
     topicStrLen = idStrLen = fieldStrLen = 0;
-    topicEnum = (EnumTypeInfoTopic)-1;
-    fieldEnum = (EnumDataField)-1;
+    topicEnum = EnumTypeInfoTopic::etitNONE;
+    fieldEnum = EnumDataField::edf__none;
   }
 
   //const uint8_t mac[8]; TODO
@@ -226,7 +227,8 @@ bool FeedbackInfo::next() {
 
   fieldStr = fndB + 1;
   fieldStrLen = fndE - fieldStr;
-  fieldEnum = (EnumDataField)Util::getArrayIndex(fieldStr, fieldStrLen, DataField::_list, DataField::_listNum);
+  int idx = Util::getArrayIndex(fieldStr, fieldStrLen, DataField::_list, DataField::_listNum);
+  fieldEnum = (EnumDataField)(idx >= 0 ? idx : 0);
 
   fndB = Util::strchr(fndE, pe, ':');
   if (fndB == nullptr) return false;

@@ -38,6 +38,7 @@ public:
 
   static const DiscoveryBlock* _listSystemNormal[];
   static const DiscoveryBlock* _listSystemRetained[];
+  static const DiscoveryBlock* _listSystemConnectivity[];
 
 protected:
   bool generateSystemReport(DataBuffer* systemBuffer, ESystemMessageType type);
