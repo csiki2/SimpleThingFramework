@@ -21,6 +21,7 @@
 namespace stf {
 
 const Mac::MacMap Mac::_vendorList[] = {
+    {"Local", _macLocal, 0},
     {"Esp", _macEsp, 2},
     {"Qing", _macQing, 1},
     {"Tlnk", _macTelink, 1},
@@ -97,6 +98,7 @@ void Mac::integrityCheck() {
   STFLOG_INFO("Integrity check for mac_to_strid finished with %u collosions.\n", coll);
 }
 
+const uint8_t Mac::_macLocal[] = {STF_LOCAL_MAC, 0x00, 0xFF};
 const uint8_t Mac::_macQing[] = {0x4C, 0x65, 0xA8, 0xD4, 0x58, 0x2D, 0x34, 0x00, 0xFF};
 
 /* clang-format off */

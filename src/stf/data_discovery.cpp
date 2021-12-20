@@ -27,7 +27,21 @@ const char* DiscoveryBlock::getName() const {
   return _name != nullptr ? _name : DataField::_list[_field];
 }
 
+uint Discovery::addBlock(DataBuffer* buffer, uint8_t topic, const DiscoveryBlock& block, EnumExtraInfo cacheCmd, const void* cacheValue, const char* device_name, const char* device_model, const char* device_manufacturer, const char* device_sw) {
+  uint need = setupGenerator(buffer, topic, cacheCmd, cacheValue, device_name, device_model, device_manufacturer, device_sw);
+  if (buffer == nullptr || need != 0) return need;
+  buffer->nextToWrite(edf__discElem, edt_Generator, topic).setPtr((const void*)&generateBlocks, (void*)&block).closeMessage();
+  return 0;
+}
+
 uint Discovery::addBlocks(DataBuffer* buffer, uint8_t topic, const DiscoveryBlock** list, EnumExtraInfo cacheCmd, const void* cacheValue, const char* device_name, const char* device_model, const char* device_manufacturer, const char* device_sw) {
+  uint need = setupGenerator(buffer, topic, cacheCmd, cacheValue, device_name, device_model, device_manufacturer, device_sw);
+  if (buffer == nullptr || need != 0) return need;
+  buffer->nextToWrite(edf__discList, edt_Generator, topic).setPtr((const void*)&generateBlocks, (void*)list).closeMessage();
+  return 0;
+}
+
+uint Discovery::setupGenerator(DataBuffer* buffer, uint8_t topic, EnumExtraInfo cacheCmd, const void* cacheValue, const char* device_name, const char* device_model, const char* device_manufacturer, const char* device_sw) {
   bool bl1 = device_name != nullptr || device_model != nullptr;
   bool bl2 = device_manufacturer != nullptr || device_sw != nullptr;
   uint need = (bl1 ? 1 : 0) + (bl2 ? 1 : 0) + (cacheCmd != 0 ? 1 : 0) + 1;
@@ -47,7 +61,6 @@ uint Discovery::addBlocks(DataBuffer* buffer, uint8_t topic, const DiscoveryBloc
 
   if (bl1) buffer->nextToWrite(edf__none, edt_None, 0, eeiCacheBlock1).setPtr(device_name, device_model);
   if (bl2) buffer->nextToWrite(edf__none, edt_None, 0, eeiCacheBlock2).setPtr(device_manufacturer, device_sw);
-  buffer->nextToWrite(edf__discList, edt_Generator, topic).setPtr((const void*)&generateBlocks, (void*)list).closeMessage();
   return 0;
 }
 
@@ -103,6 +116,7 @@ const DiscoveryBlock Discovery::_Temperature_C = {edf_tempc, edcSensor, eecPrima
 const DiscoveryBlock Discovery::_Humidity = {edf_hum, edcSensor, eecPrimary, "Humidity", "%", "_"};
 const DiscoveryBlock Discovery::_Battery = {edf_batt, edcSensor, eecDiagnostic, "Battery", "%", "_"};
 const DiscoveryBlock Discovery::_Volt = {edf_volt, edcSensor, eecDiagnostic, nullptr, "V", nullptr};
+const DiscoveryBlock Discovery::_Weight = {edf_weight, edcSensor, eecPrimary, nullptr, "kg", nullptr};
 const DiscoveryBlock Discovery::_Uptime_S = {edf_uptime_s, edcSensor, eecDiagnostic, "Uptime", "s", nullptr};
 const DiscoveryBlock Discovery::_Uptime_D = {edf_uptime_d, edcSensor, eecDiagnostic, "Uptime", "d", nullptr};
 const DiscoveryBlock Discovery::_Free_Memory = {edf_free_memory, edcSensor, eecDiagnostic, nullptr, "B", nullptr};

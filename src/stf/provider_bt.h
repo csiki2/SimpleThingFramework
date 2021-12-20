@@ -35,8 +35,8 @@ public:
 
   // len input: expected minimum length, len output: result length
   const uint8_t* getServiceDataByUUID(uint32_t uuid, uint& len) const;
-  const uint8_t* getField(uint8_t type, uint& len, int idx = 0);
-  uint countField(uint8_t type);
+  const uint8_t* getField(uint8_t type, uint& len, int idx = 0) const;
+  uint countField(uint8_t type) const;
   bool checkMAC(uint8_t type, uint8_t m0, uint8_t m1, uint8_t m2) const;
 
   const uint8_t* _payloadBuffer;

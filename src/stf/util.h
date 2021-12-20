@@ -32,6 +32,7 @@ public:
 
 class Util {
 public:
+  static int strcmp(const uint8_t* buff, uint len, const char* str);
   static const char* strchr(const char* strB, const char* strE, const char fnd);
   static const char* stranychr(const char* strB, const char* strE, const char* fnd);
   static int getArrayIndex(const char* str, uint strLen, const char* arr[], uint arrLen);

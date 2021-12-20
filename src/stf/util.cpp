@@ -45,6 +45,14 @@ int Util::getArrayIndex(const char* str, uint strLen, const char* arr[], uint ar
   return -1;
 }
 
+int Util::strcmp(const uint8_t* buff, uint len, const char* str) {
+  int slen = strlen(str);
+  if (len == 0 || slen == 0) return len == slen ? 0 : (len < slen ? -1 : 1);
+  if (len == slen) return memcmp(buff, str, len);
+  int res = memcmp(buff, str, len < slen ? len : slen);
+  return res != 0 ? res : (len < slen ? -1 : 1);
+}
+
 const char* Util::strchr(const char* strB, const char* strE, const char fnd) {
   for (; strB < strE; strB++)
     if (*strB == fnd) return strB;

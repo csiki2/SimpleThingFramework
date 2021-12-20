@@ -21,8 +21,8 @@
 namespace stf {
 
 struct DeviceInfo {
-  char* strId;
-  char* strMAC;
+  const char* strId;
+  const char* strMAC;
   uint8_t* mac;
   uint8_t macLen;
 

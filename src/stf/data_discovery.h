@@ -58,6 +58,7 @@ struct DiscoveryBlock {
 class Discovery {
 public:
   // Device info should be added independently...
+  static uint addBlock(DataBuffer* buffer, uint8_t topic, const DiscoveryBlock& block, EnumExtraInfo cacheCmd = eeiNone, const void* cacheValue = nullptr, const char* device_name = nullptr, const char* device_model = nullptr, const char* device_manufacturer = nullptr, const char* device_sw = nullptr);
   static uint addBlocks(DataBuffer* buffer, uint8_t topic, const DiscoveryBlock** list, EnumExtraInfo cacheCmd = eeiNone, const void* cacheValue = nullptr, const char* device_name = nullptr, const char* device_model = nullptr, const char* device_manufacturer = nullptr, const char* device_sw = nullptr);
 
   static void generateBlocks(DataFeeder& feeder, const DataBlock& generatorBlock, DataCache& cache);
@@ -67,6 +68,7 @@ public:
   static const DiscoveryBlock _Humidity;
   static const DiscoveryBlock _Battery;
   static const DiscoveryBlock _Volt;
+  static const DiscoveryBlock _Weight;
   static const DiscoveryBlock _Uptime_S;
   static const DiscoveryBlock _Uptime_D;
   static const DiscoveryBlock _Free_Memory;
@@ -77,6 +79,9 @@ public:
 
   static const char* _topicConfigComponent[];
   static const char* _entityCategory[];
+
+protected:
+  static uint setupGenerator(DataBuffer* buffer, uint8_t topic, EnumExtraInfo cacheCmd, const void* cacheValue, const char* device_name, const char* device_model, const char* device_manufacturer, const char* device_sw);
 };
 
 } // namespace stf

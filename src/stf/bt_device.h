@@ -39,7 +39,9 @@ public:
   static EnumBTResult resolve(DataBuffer* buffer, const BTPacket& packet);
 
 protected:
-  static int32_t getBufferValue(const uint8_t* buffer, uint8_t size);
+  static int32_t getBufferValueLE(const uint8_t* buffer, uint8_t size); // little endian
+  static int32_t getBufferValueBE(const uint8_t* buffer, uint8_t size); // big endian
+  static uint addDiscoveryBlock(DataBuffer& buffer, const DiscoveryBlock& block, const uint8_t* mac, const char* deviceName, const char* deviceModel, const char* deviceManufacturer, const char* deviceSW);
   static uint addDiscoveryBlocks(DataBuffer& buffer, const DiscoveryBlock** list, const uint8_t* mac, const char* deviceName, const char* deviceModel, const char* deviceManufacturer, const char* deviceSW);
 
   typedef EnumBTResult (*ServiceFunction)(DataBuffer* buffer, const BTPacket& packet);
@@ -47,6 +49,7 @@ protected:
 
   static EnumBTResult serviceMiBacon(DataBuffer* buffer, const BTPacket& packet);
   static EnumBTResult serviceTelinkLYWSD03MMC_atc1441_pvvx(DataBuffer* buffer, const BTPacket& packet);
+  static EnumBTResult serviceLaica_700234(DataBuffer* buffer, const BTPacket& packet);
 };
 
 class STFATTR_PACKED BTDevice {

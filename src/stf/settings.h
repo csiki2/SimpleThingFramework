@@ -34,6 +34,10 @@
 #  define STF_THING_PASSWORD "SimpleThing"
 #endif
 
+#ifndef STF_LOCAL_MAC
+#  define STF_LOCAL_MAC 0x32, 0x43, 0x53
+#endif
+
 // Logging
 
 #ifdef STFLOG_HEADER

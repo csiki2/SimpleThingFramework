@@ -257,7 +257,7 @@ const uint8_t* BTPacket::getServiceDataByUUID(uint32_t uuid, uint& len) const {
   return nullptr;
 }
 
-const uint8_t* BTPacket::getField(uint8_t type, uint& len, int idx) {
+const uint8_t* BTPacket::getField(uint8_t type, uint& len, int idx) const {
   uint buffLen = _payloadLength;
   const uint8_t* buffPtr = _payloadBuffer;
   while (buffLen >= 2) {
@@ -274,7 +274,7 @@ const uint8_t* BTPacket::getField(uint8_t type, uint& len, int idx) {
   return nullptr;
 }
 
-uint BTPacket::countField(uint8_t type) {
+uint BTPacket::countField(uint8_t type) const {
   uint buffLen = _payloadLength, count = 0;
   const uint8_t* buffPtr = _payloadBuffer;
   while (buffLen >= 2) {

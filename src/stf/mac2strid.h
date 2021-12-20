@@ -46,6 +46,7 @@ protected:
 
   static const MacMap _vendorList[];
 
+  static const uint8_t _macLocal[];
   static const uint8_t _macEsp[];
   static const uint8_t _macQing[];
   static const uint8_t _macTelink[];
