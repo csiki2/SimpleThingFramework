@@ -120,7 +120,8 @@ const DiscoveryBlock Discovery::_Weight = {edf_weight, edcSensor, eecPrimary, nu
 const DiscoveryBlock Discovery::_Uptime_S = {edf_uptime_s, edcSensor, eecDiagnostic, "Uptime", "s", nullptr};
 const DiscoveryBlock Discovery::_Uptime_D = {edf_uptime_d, edcSensor, eecDiagnostic, "Uptime", "d", nullptr};
 const DiscoveryBlock Discovery::_Free_Memory = {edf_free_memory, edcSensor, eecDiagnostic, nullptr, "B", nullptr};
-const DiscoveryBlock Discovery::_Discovery_Reset = {edf_discovery_reset, edcButton, eecDiagnostic, "Reset Discovery", nullptr, nullptr};
+const DiscoveryBlock Discovery::_Device_Reset = {edf_device_reset, edcButton, eecConfig, "Reset Device", nullptr, nullptr};
+const DiscoveryBlock Discovery::_Discovery_Reset = {edf_discovery_reset, edcButton, eecConfig, "Reset Discovery", nullptr, nullptr};
 const DiscoveryBlock Discovery::_Connectivity = {edf_connectivity, edcBinarySensor, eecDiagnostic, nullptr, nullptr, "_"};
 
 const DiscoveryBlock* Discovery::_listVoltBattHumTempC[] = {&Discovery::_Volt, &Discovery::_Battery, &Discovery::_Humidity, &Discovery::_Temperature_C, nullptr};

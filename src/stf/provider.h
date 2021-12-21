@@ -30,6 +30,7 @@ struct FeedbackInfo {
   bool next();
 
   bool checkPayload(const char* str) const;
+  void generateMAC();
 
   const char* topic;
 
@@ -86,7 +87,7 @@ public:
   static Provider* getNext(Provider* provider, DataBuffer* parentBuffer);
 
 protected:
-  bool handleSimpleFeedback(const FeedbackInfo& info, const DiscoveryBlock& block, bool* value);
+  bool handleSimpleFeedback(const FeedbackInfo& info, const DiscoveryBlock& block, uint8_t* mac, uint macLen, bool* value);
 
   DataBuffer* _parentBuffer;
 

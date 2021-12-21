@@ -199,8 +199,8 @@ uint BTProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESyste
 }
 
 void BTProvider::feedback(const FeedbackInfo& info) {
-  handleSimpleFeedback(info, _filterUnknown, &_packetsFilterUnknown);
-  handleSimpleFeedback(info, Discovery::_Discovery_Reset, &_forceDiscoveryReset);
+  handleSimpleFeedback(info, _filterUnknown, Host::_info.mac, Host::_info.macLen, &_packetsFilterUnknown);
+  handleSimpleFeedback(info, Discovery::_Discovery_Reset, Host::_info.mac, Host::_info.macLen, &_forceDiscoveryReset);
 }
 
 // BTPacket

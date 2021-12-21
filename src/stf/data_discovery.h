@@ -72,6 +72,7 @@ public:
   static const DiscoveryBlock _Uptime_S;
   static const DiscoveryBlock _Uptime_D;
   static const DiscoveryBlock _Free_Memory;
+  static const DiscoveryBlock _Device_Reset;
   static const DiscoveryBlock _Discovery_Reset;
   static const DiscoveryBlock _Connectivity;
 

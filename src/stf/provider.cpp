@@ -65,7 +65,8 @@ uint Provider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESystemM
 void Provider::feedback(const FeedbackInfo& info) {
 }
 
-bool Provider::handleSimpleFeedback(const FeedbackInfo& info, const DiscoveryBlock& block, bool* value) {
+bool Provider::handleSimpleFeedback(const FeedbackInfo& info, const DiscoveryBlock& block, uint8_t* mac, uint macLen, bool* value) {
+  if (mac != nullptr && (macLen != info.macLen || memcmp(info.mac, mac, macLen) != 0)) return false;
   if (info.fieldEnum == block._field) {
     if (block._component == edcButton && info.checkPayload("PRESS")) {
       if (value != nullptr) *value = true;
@@ -180,6 +181,7 @@ void FeedbackInfo::set(const char* topicInput, const uint8_t* payloadInput, unsi
     topicEnum = DataType::findTopicName(topicStr, topicStrLen);
     idStr = Host::_info.strMAC;
     idStrLen = strlen(idStr);
+    memcpy(mac, Host::_info.mac, macLen = Host::_info.macLen);
     retained = true;
     fieldStr = "";
     fieldStrLen = 0;
@@ -194,6 +196,7 @@ void FeedbackInfo::set(const char* topicInput, const uint8_t* payloadInput, unsi
     fieldStr = (idStr != nullptr && (fndB = strchr(idStr, '_')) != nullptr) ? fndB + 1 : "";
     fieldStrLen = strlen(fieldStr);
     idStrLen = fieldStr != nullptr ? fndB - idStr : 0;
+    generateMAC();
     int idx = Util::getArrayIndex(fieldStr, fieldStrLen, DataField::_list, DataField::_listNum);
     fieldEnum = (EnumDataField)(idx >= 0 ? idx : 0);
   } else {
@@ -201,10 +204,8 @@ void FeedbackInfo::set(const char* topicInput, const uint8_t* payloadInput, unsi
     topicStrLen = idStrLen = fieldStrLen = 0;
     topicEnum = EnumTypeInfoTopic::etitNONE;
     fieldEnum = EnumDataField::edf__none;
+    macLen = 0;
   }
-
-  //const uint8_t mac[8]; TODO
-  //uint macLen;
 }
 
 bool FeedbackInfo::next() {
@@ -253,6 +254,21 @@ bool FeedbackInfo::next() {
 
 bool FeedbackInfo::checkPayload(const char* str) const {
   return payloadLength == strlen(str) && strncmp((const char*)payload, str, payloadLength) == 0;
+}
+
+void FeedbackInfo::generateMAC() {
+  macLen = 0;
+  if (idStrLen % 2 == 1) return;
+  for (int idx = 0; idx < idStrLen; idx += 2) {
+    uint c0 = tolower(idStr[idx]);
+    uint c1 = tolower(idStr[idx + 1]);
+    if ((c0 < 'a' || c0 > 'f') && (c0 < '0' || c0 > '9')) return;
+    if ((c1 < 'a' || c1 > 'f') && (c1 < '0' || c1 > '9')) return;
+    c0 -= c0 <= '9' ? '0' : 'a' - 10;
+    c1 -= c1 <= '9' ? '0' : 'a' - 10;
+    mac[idx / 2] = (c0 << 4) + c1;
+  }
+  macLen = idStrLen / 2;
 }
 
 } // namespace stf

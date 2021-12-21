@@ -51,13 +51,12 @@ uint32_t OTAProvider::loop() {
 }
 
 const DiscoveryBlock OTAProvider::_switch = {edf_ota, edcSwitch, eecConfig, "OTA", nullptr, nullptr};
-const DiscoveryBlock* OTAProvider::_listSystem[] = {&_switch, nullptr};
 
 uint OTAProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESystemMessageType type) {
   uint res = 0;
   switch (type) {
     case ESystemMessageType::Discovery:
-      res = Discovery::addBlocks(systemBuffer, etitSYSR, _listSystem);
+      res = Discovery::addBlock(systemBuffer, etitSYSR, _switch);
       break;
     case ESystemMessageType::Retained:
       res = 1;
@@ -73,7 +72,7 @@ uint OTAProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESyst
 }
 
 void OTAProvider::feedback(const FeedbackInfo& info) {
-  handleSimpleFeedback(info, _switch, &_enabled);
+  handleSimpleFeedback(info, _switch, Host::_info.mac, Host::_info.macLen, &_enabled);
 }
 
 void OTAProvider::onStart() { STFLOG_WARNING("OTA update is starting.\n"); }

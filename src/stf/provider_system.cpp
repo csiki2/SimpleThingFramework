@@ -30,9 +30,8 @@ SystemProvider::SystemProvider() : Provider(g_bufferSystemProvider) {
 
 const DiscoveryBlock SystemProvider::_discoveryLed = {edf_led, edcSwitch, eecConfig, "LED", nullptr, nullptr};
 
-const DiscoveryBlock* SystemProvider::_listSystemNormal[] = {&Discovery::_Discovery_Reset, &Discovery::_Uptime_S, &Discovery::_Uptime_D, &Discovery::_Free_Memory, nullptr};
+const DiscoveryBlock* SystemProvider::_listSystemNormal[] = {&Discovery::_Device_Reset, &Discovery::_Discovery_Reset, &Discovery::_Uptime_S, &Discovery::_Uptime_D, &Discovery::_Free_Memory, nullptr};
 const DiscoveryBlock* SystemProvider::_listSystemRetained[] = {&_discoveryLed, nullptr};
-const DiscoveryBlock* SystemProvider::_listSystemConnectivity[] = {&Discovery::_Connectivity, nullptr};
 
 uint SystemProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ESystemMessageType type) {
   uint res = 0;
@@ -40,7 +39,7 @@ uint SystemProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ES
     case ESystemMessageType::Discovery:
       res = Discovery::addBlocks(systemBuffer, etitSYS, _listSystemNormal, eeiNone, nullptr, Host::_name, "Test", "community", "0.01");
       res += Discovery::addBlocks(systemBuffer, etitSYSR, _listSystemRetained, eeiNone, nullptr, Host::_name, "Test", "community", "0.01");
-      res += Discovery::addBlocks(systemBuffer, etitCONN, _listSystemConnectivity, eeiNone, nullptr, Host::_name, "Test", "community", "0.01");
+      res += Discovery::addBlock(systemBuffer, etitCONN, Discovery::_Connectivity, eeiNone, nullptr, Host::_name, "Test", "community", "0.01");
       break;
     case ESystemMessageType::Normal:
       res = 4;
@@ -66,8 +65,9 @@ uint SystemProvider::systemUpdate(DataBuffer* systemBuffer, uint32_t uptimeS, ES
 }
 
 void SystemProvider::feedback(const FeedbackInfo& info) {
-  handleSimpleFeedback(info, Discovery::_Discovery_Reset, &_forceDiscoveryReset);
-  handleSimpleFeedback(info, _discoveryLed, &_enableLed);
+  if (handleSimpleFeedback(info, Discovery::_Device_Reset, Host::_info.mac, Host::_info.macLen, nullptr)) ESP.restart();
+  handleSimpleFeedback(info, Discovery::_Discovery_Reset, Host::_info.mac, Host::_info.macLen, &_forceDiscoveryReset);
+  handleSimpleFeedback(info, _discoveryLed, Host::_info.mac, Host::_info.macLen, &_enableLed);
 }
 
 void SystemProvider::requestRetainedReport() {

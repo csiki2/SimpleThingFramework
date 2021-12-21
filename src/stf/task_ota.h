@@ -52,7 +52,6 @@ protected:
   ArduinoOTAClass* _arduinoOTA = nullptr;
 
   static const DiscoveryBlock _switch;
-  static const DiscoveryBlock* _listSystem[];
 };
 
 } // namespace stf
