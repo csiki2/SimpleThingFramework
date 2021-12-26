@@ -129,7 +129,7 @@ void __attribute__((weak)) LedTask::registerLedEvents() {
 }
 
 void LedTask::ledPlayDirect(int8_t led, int8_t chn, uint8_t brightness, LedSample* sample, uint16_t sampleElemTime, uint8_t loopCount, uint32_t loopTime, int32_t uptimeSync) {
-  if (led < 0 || chn < 0) return; // valid case: disabled event
+  if (led < 0 || chn < 0 || STFLED_NUM == 0) return; // valid case: disabled event
   if (led >= STFLED_NUM) led = 0;
   if (chn >= STFLED_CHANNELS) chn = STFLED_CHANNELS - 1;
   LedChannel& channel = leds[led].channels[chn];

@@ -45,8 +45,9 @@ void TaskRoot::initTask(const TaskDescriptor* descriptor) {
 
 void TaskRoot::setup() {
   for (DataBuffer* db = _bufferHead; db != nullptr; db = (DataBuffer*)db->_objectNext) {
-    STFLOG_INFO("TaskRoot::setup %p\n", this);
+    STFLOG_INFO("TaskRoot::setup - DataBuffer %p start ...", db);
     db->setupProviders();
+    STFLOG_INFO(" done\n");
   }
 }
 

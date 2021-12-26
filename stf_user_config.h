@@ -17,8 +17,15 @@
 
 #define STFTASK_LED 1
 
-#define STFLED_PINS LED_BUILTIN
-#define STFLED_PWMS 0
+#ifndef STFLED_PINS
+#  ifdef LED_BUILTIN
+#    define STFLED_PINS LED_BUILTIN
+#    define STFLED_PWMS 0
+#  else
+#    define STFLED_PINS
+#    define STFLED_PWMS
+#  endif
+#endif
 
 // BLE Test mode -> the last octet of the MAC must be this value (before xor)
 //#define STFBLE_TEST_MAC 0x0c
@@ -28,4 +35,3 @@
 // OTA
 
 #define STFTASK_OTA 1
-
