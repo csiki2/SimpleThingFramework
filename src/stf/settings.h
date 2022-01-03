@@ -112,6 +112,11 @@
 #define STFLEDEVENT_BLE_RECEIVE        10
 #define STFLEDEVENT_RF_RECEIVE         11
 
+#define STFLEDTYPE_MASK        127
+#define STFLEDTYPE_PWM(pwm)    pwm // 0-15
+#define STFLEDTYPE_BINARY      127
+#define STFLEDTYPEFLAG_MANAGED 128
+
 #ifndef STFTASK_LED
 #  define STFTASK_LED 1
 #endif
@@ -120,26 +125,13 @@
 #  define STFLED_HEADER "stf/task_led.h"
 #endif
 
-#ifdef STFLED_HEADER
-#  include STFLED_HEADER
-#endif
-
 #ifndef STFLED_COMMAND
-#  define STFLED_COMMAND(event)
+#  define STFLED_COMMAND(event) stf::Host::ledPlayEvent(event)
 #endif
 
 // WIFI
 #ifndef STFTASK_WIFI
 #  define STFTASK_WIFI 1
-#endif
-
-#if STFTASK_WIFI == 1
-#  include <stf/task_wifi.h>
-#endif
-
-#if STFMQTT == 1
-#  undef STFJSON
-#  define STFJSON 1
 #endif
 
 // Buffers ( + Providers)

@@ -72,6 +72,8 @@ void TaskRoot::setupTasks() {
   }
   STFLOG_INFO("Total number of tasks: %d\n", TaskRoot::_count);
 
+  Host::ledRegisterEvents();
+
   STFLOG_INFO("TaskRoot::setupTasks - rts task creation\n");
   for (TaskRoot* tr = TaskRoot::_taskHead; tr != nullptr; tr = tr->_next) {
     const TaskDescriptor* desc = tr->_descriptorPtr;

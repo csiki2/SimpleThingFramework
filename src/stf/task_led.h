@@ -22,8 +22,8 @@
 #  define STFLED_PINS LED_BUILTIN
 #endif
 
-#ifndef STFLED_PWMS
-#  define LED_PWMS 0
+#ifndef STFLED_TYPE
+#  define STFLED_TYPE (STFLEDTYPEFLAG_MANAGED | STFLEDTYPE_PWM(0))
 #endif
 
 #ifndef STFLED_CHANNELS
@@ -32,10 +32,6 @@
 
 #ifndef STFLED_MAXEVENTS
 #  define STFLED_MAXEVENTS 16
-#endif
-
-#ifndef STFLED_COMMAND
-#  define STFLED_COMMAND(event) stf::LedTask::ledPlayEvent(event)
 #endif
 
 #include <stf/task.h>
@@ -59,17 +55,19 @@ public:
   static void ledPlayDirect(int8_t led, int8_t chn, uint8_t brightness, LedSample* sample, uint16_t sampleElemTime, uint8_t loopCount, uint32_t loopTime, int32_t uptimeSync);
   static void ledRegisterEvent(int event, int8_t led, int8_t chn, uint8_t brightness, LedSample* sample, uint16_t sampleElemTime, uint8_t loopCount, uint32_t loopTime, int32_t uptimeSync);
 
-  static void registerLedEvents();
   static void registerDefaultLedEvents();
 
 protected:
   static void setLed(int idx, int value);
 
-  static LedEvent ledEvents[STFLED_MAXEVENTS];
-  static uint8_t ledPins[];
-  static uint8_t ledPWM[];
+  static LedEvent _ledEvents[STFLED_MAXEVENTS];
+  static const uint8_t _ledPins[];
+  static const uint8_t _ledType[];
 
-  static LedObject leds[];
+  static LedObject _leds[];
+
+  Mutex _mutexLeds;
+  Mutex _mutexChannels;
 };
 
 extern template class Task<LedTask>;
@@ -81,6 +79,7 @@ extern template class Task<LedTask>;
   uint8_t g_ledSampleData##name[] = {data}; \
   LedSample g_ledSample##name = {g_ledSampleData##name, sizeof(g_ledSampleData##name)};
 
+extern LedSample g_ledSample1;
 extern LedSample g_ledSample0;
 extern LedSample g_ledSample010;
 extern LedSample g_ledSample01010;

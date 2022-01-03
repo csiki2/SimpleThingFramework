@@ -64,6 +64,11 @@
 #  endif
 #endif
 
+#if STFMQTT == 1
+#  undef STFJSON
+#  define STFJSON 1
+#endif
+
 namespace stf {
 #if STFTASK_WIFI == 1
 

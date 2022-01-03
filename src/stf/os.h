@@ -55,6 +55,9 @@ private:
 public:
   static void setup();
 
+  static void ledPlayEvent(int event);
+  static void ledRegisterEvents();
+
   static inline uint32_t uptimeMS32() { return millis(); }
   static inline uint64_t uptimeMS64() { return esp_timer_get_time() / 1000ULL; }
   static inline uint32_t uptimeSec32() { return (uint32_t)(esp_timer_get_time() / 1000000ULL); }
@@ -90,3 +93,11 @@ protected:
 };
 
 } // namespace stf
+
+#ifdef STFLED_HEADER
+#  include STFLED_HEADER
+#endif
+
+#if STFTASK_WIFI == 1
+#  include <stf/task_wifi.h>
+#endif

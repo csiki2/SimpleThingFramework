@@ -20,10 +20,10 @@
 #ifndef STFLED_PINS
 #  ifdef LED_BUILTIN
 #    define STFLED_PINS LED_BUILTIN
-#    define STFLED_PWMS 0
+#    define STFLED_TYPE (STFLEDTYPEFLAG_MANAGED | STFLEDTYPE_PWM(0))
 #  else
 #    define STFLED_PINS
-#    define STFLED_PWMS
+#    define STFLED_TYPE
 #  endif
 #endif
 
